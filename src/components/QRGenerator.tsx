@@ -94,7 +94,8 @@ export default function QRGenerator() {
             <QrCode size={28} className="text-primary" />
             <h1 className="text-2xl font-bold text-foreground">QR Generator</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Convert any text or URL into a QR code</p>
+          <p className="text-sm text-muted-foreground">Convert any text or URL into a QR code and download a PNG of it.</p>
+          <p className="text-sm text-muted-foreground">No trackers. No ads. Forever free, as it should be.</p>
         </div>
 
         <Card>
