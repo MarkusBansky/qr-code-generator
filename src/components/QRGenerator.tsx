@@ -6,12 +6,11 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Download, QrCode } from '@phosphor-icons/react'
-import { useKV } from '@github/spark/hooks'
 
 const MAX_CHARACTERS = 2000
 
 export default function QRGenerator() {
-  const [text, setText] = useKV('qr-text', '')
+  const [text, setText] = useState<string>('')
   const [qrDataUrl, setQrDataUrl] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
