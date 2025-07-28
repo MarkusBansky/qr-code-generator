@@ -1,0 +1,15 @@
+name = "qr-code-generator"
+type = "javascript"
+account_id = ""
+workers_dev = true
+route = ""
+zone_id = ""
+compatibility_date = "2025-07-28"
+main = "dist/main.js"
+
+[build]
+command = "npm run build"
+
+[site]
+bucket = "dist"
+entry-point = "."
