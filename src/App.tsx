@@ -1,5 +1,7 @@
+import QRGenerator from './components/QRGenerator'
+
 function App() {
-    return <div></div>
+    return <QRGenerator />
 }
 
 export default App
