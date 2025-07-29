@@ -12,20 +12,29 @@
 ## Thought Process for Feature Selection
 - **Core Problem Analysis**: Users need QR codes for various purposes but want control over appearance and format, plus privacy assurance.
 - **User Context**: Quick one-off QR code generation for business cards, websites, sharing, presentations, etc.
-- **Critical Path**: Enter text → Customize appearance → Download in preferred format (with optional history access)
+- **Critical Path**: Choose input method (manual/template) → Enter content → Customize appearance → Download in preferred format (with optional history access)
 - **Key Moments**: 
-  1. Real-time QR code generation as user types
-  2. Visual customization with live preview
-  3. Format choice (PNG vs SVG) for different use cases
-  4. Access to previous QR codes through history
+  1. Template selection and guided form completion for structured data
+  2. Real-time QR code generation as user types or fills template fields
+  3. Visual customization with live preview
+  4. Format choice (PNG vs SVG) for different use cases
+  5. Access to previous QR codes through history
 
 ## Essential Features
 
 ### Input Management
-- Real-time QR code generation with debounced input processing
+- **Manual Input**: Real-time QR code generation with debounced input processing
+- **Template System**: Pre-configured templates for common QR code use cases:
+  - **WiFi Network**: Auto-generate WiFi connection QR codes with SSID, password, and security type
+  - **Contact Card**: Create vCard format for saving contact information (name, phone, email, organization, website)
+  - **Email**: Pre-compose email messages with recipient, subject, and body
+  - **Phone Call**: Direct dialing QR codes with phone numbers
+  - **SMS Message**: Pre-written text message QR codes
+  - **Location**: GPS coordinate sharing with optional labels
 - Character limit enforcement (2000 chars) with visual feedback
-- URL detection with visual confirmation
+- URL detection with visual confirmation for manual input
 - Input validation and error handling
+- Tab-based interface separating manual input from template selection
 
 ### QR Code Customization
 - **Color Customization**: Full color picker for foreground/background colors
@@ -39,11 +48,12 @@
 - Both formats maintain consistent square QR code styling
 
 ### QR Code History
-- **Persistent Storage**: Automatically saves generated QR codes to local history
+- **Persistent Storage**: Automatically saves generated QR codes to local history when exported
+- **Template Integration**: History preserves both template selections and generated content
 - **Smart Deduplication**: Prevents duplicate entries while updating timestamps
 - **Quick Access**: Collapsible history panel with recent QR codes
 - **History Management**: Individual removal and bulk clear options
-- **One-Click Reload**: Instantly restore previous QR codes with all settings
+- **One-Click Reload**: Instantly restore previous QR codes with all settings and template data
 
 ### Privacy & Performance
 - **No Server Dependency**: All processing happens client-side
@@ -83,11 +93,15 @@
 
 ### UI Elements & Component Selection
 - **Card Components**: Clear section separation and visual grouping
+- **Tab Interface**: Clean separation between manual input and template modes  
+- **Template Grid**: Visual template selection with icons and descriptions
+- **Form Controls**: Dynamic field generation based on selected template
 - **Input Controls**: Shadcn components for consistency and accessibility
 - **Color Pickers**: Dual approach (visual picker + hex input) for precision and convenience
 - **Select Dropdowns**: Clear option presentation for size choices
 - **Button Groups**: Paired download options with clear format distinction
 - **Progress Indicators**: Subtle loading states and character count feedback
+- **Generated Content Preview**: Read-only display of template-generated QR content
 
 ### Animations
 - **Purposeful Meaning**: Smooth transitions communicate app responsiveness
@@ -102,10 +116,14 @@
 
 ## Edge Cases & Problem Scenarios
 - **Empty Input**: Clear placeholder state with helpful messaging
+- **Template Validation**: Required field enforcement with clear visual feedback
+- **Incomplete Templates**: Graceful handling when required template fields are missing
 - **Overlong Input**: Graceful truncation with clear feedback
+- **Invalid Template Data**: Validation for email formats, phone numbers, coordinates
 - **Invalid Colors**: Fallback to defaults if invalid hex codes entered
 - **Generation Errors**: User-friendly error messages with recovery guidance
 - **Download Failures**: Retry mechanisms and alternative download methods
+- **Template Switching**: Clean state management when switching between templates
 
 ## Implementation Considerations
 - **Performance**: Debounced input processing to avoid excessive regeneration
