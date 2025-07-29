@@ -12,11 +12,12 @@
 ## Thought Process for Feature Selection
 - **Core Problem Analysis**: Users need QR codes for various purposes but want control over appearance and format, plus privacy assurance.
 - **User Context**: Quick one-off QR code generation for business cards, websites, sharing, presentations, etc.
-- **Critical Path**: Enter text → Customize appearance → Download in preferred format
+- **Critical Path**: Enter text → Customize appearance → Download in preferred format (with optional history access)
 - **Key Moments**: 
   1. Real-time QR code generation as user types
   2. Visual customization with live preview
   3. Format choice (PNG vs SVG) for different use cases
+  4. Access to previous QR codes through history
 
 ## Essential Features
 
@@ -37,10 +38,18 @@
 - **SVG Export**: Vector format for scalable graphics, web use, professional printing
 - Both formats maintain consistent square QR code styling
 
+### QR Code History
+- **Persistent Storage**: Automatically saves generated QR codes to local history
+- **Smart Deduplication**: Prevents duplicate entries while updating timestamps
+- **Quick Access**: Collapsible history panel with recent QR codes
+- **History Management**: Individual removal and bulk clear options
+- **One-Click Reload**: Instantly restore previous QR codes with all settings
+
 ### Privacy & Performance
 - **No Server Dependency**: All processing happens client-side
 - **No Tracking**: Explicit privacy messaging
 - **Responsive Generation**: Sub-100ms update times for smooth UX
+- **Local Storage**: History stored locally for privacy while maintaining convenience
 
 ## Design Direction
 

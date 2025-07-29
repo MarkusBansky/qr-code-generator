@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Download, QrCode, FileImage, FileSvg } from '@phosphor-icons/react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Download, QrCode, FileImage, FileSvg, Clock, ChevronDown, Copy, Trash } from '@phosphor-icons/react'
+import { useKV } from '@github/spark/hooks'
 
 const MAX_CHARACTERS = 2000
 
@@ -18,12 +21,23 @@ interface QROptions {
   margin: number
 }
 
+interface QRHistoryItem {
+  id: string
+  text: string
+  createdAt: number
+  options: QROptions
+}
+
 export default function QRGenerator() {
   const [text, setText] = useState<string>('')
   const [qrDataUrl, setQrDataUrl] = useState<string>('')
   const [qrSvg, setQrSvg] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  
+  // Use persistent storage for QR history
+  const [qrHistory, setQrHistory] = useKV<QRHistoryItem[]>("qr-history", [])
   
   const [options, setOptions] = useState<QROptions>({
     colorDark: '#262626',
@@ -39,6 +53,52 @@ export default function QRGenerator() {
     } catch {
       return str.startsWith('http://') || str.startsWith('https://') || str.includes('.')
     }
+  }
+
+  const saveToHistory = (inputText: string, qrOptions: QROptions) => {
+    if (!inputText.trim()) return
+    
+    setQrHistory((currentHistory) => {
+      // Check if this exact text and options combination already exists
+      const existingIndex = currentHistory.findIndex(
+        item => item.text === inputText && 
+                JSON.stringify(item.options) === JSON.stringify(qrOptions)
+      )
+      
+      if (existingIndex !== -1) {
+        // Move existing item to front
+        const existing = currentHistory[existingIndex]
+        return [
+          { ...existing, createdAt: Date.now() },
+          ...currentHistory.filter((_, index) => index !== existingIndex)
+        ]
+      }
+      
+      // Add new item to front, limit to 20 items
+      const newItem: QRHistoryItem = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        text: inputText,
+        createdAt: Date.now(),
+        options: { ...qrOptions }
+      }
+      
+      return [newItem, ...currentHistory].slice(0, 20)
+    })
+  }
+
+  const loadFromHistory = (item: QRHistoryItem) => {
+    setText(item.text)
+    setOptions(item.options)
+  }
+
+  const removeFromHistory = (itemId: string) => {
+    setQrHistory((currentHistory) => 
+      currentHistory.filter(item => item.id !== itemId)
+    )
+  }
+
+  const clearHistory = () => {
+    setQrHistory([])
   }
 
   const generateQR = async (input: string) => {
@@ -78,6 +138,9 @@ export default function QRGenerator() {
         }
       })
       setQrDataUrl(dataUrl)
+      
+      // Save to history when successfully generated
+      saveToHistory(input, options)
     } catch (error) {
       console.error('Error generating QR code:', error)
       setQrDataUrl('')
@@ -354,6 +417,92 @@ export default function QRGenerator() {
             </div>
           </CardContent>
         </Card>
+
+        {qrHistory.length > 0 && (
+          <Card>
+            <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 rounded-t-lg transition-colors">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Clock size={20} className="text-muted-foreground" />
+                      History ({qrHistory.length})
+                    </CardTitle>
+                    <ChevronDown 
+                      size={16} 
+                      className={`text-muted-foreground transition-transform duration-200 ${
+                        isHistoryOpen ? 'rotate-180' : ''
+                      }`} 
+                    />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="text-sm text-muted-foreground">
+                      Previously generated QR codes
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearHistory}
+                      className="text-xs h-7 px-2 text-muted-foreground hover:text-destructive"
+                    >
+                      Clear all
+                    </Button>
+                  </div>
+                  <ScrollArea className="h-48">
+                    <div className="space-y-2">
+                      {qrHistory.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {item.text.length > 40 
+                                ? `${item.text.substring(0, 40)}...` 
+                                : item.text
+                              }
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(item.createdAt).toLocaleDateString()} at{' '}
+                              {new Date(item.createdAt).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => loadFromHistory(item)}
+                              title="Load this QR code"
+                            >
+                              <Copy size={12} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 hover:text-destructive"
+                              onClick={() => removeFromHistory(item.id)}
+                              title="Remove from history"
+                            >
+                              <Trash size={12} />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
 
         <canvas ref={canvasRef} className="hidden" />
       </div>
