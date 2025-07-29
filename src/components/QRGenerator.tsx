@@ -10,8 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Download, QrCode, FileImage, FileSvg, Clock, ChevronDown, Copy, Trash, WifiHigh, AddressBook, Envelope, Phone, ChatCircle, MapPin } from '@phosphor-icons/react'
-import { useKV } from '@github/spark/hooks'
+import { Download, QrCode, FileImage, FileSvg, Clock, CaretDown, Copy, Trash, WifiHigh, AddressBook, Envelope, Phone, ChatCircle, MapPin } from '@phosphor-icons/react'
 
 const MAX_CHARACTERS = 2000
 
@@ -153,7 +152,7 @@ export default function QRGenerator() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   
   // Use persistent storage for QR history
-  const [qrHistory, setQrHistory] = useKV<QRHistoryItem[]>("qr-history", [])
+  const [qrHistory, setQrHistory] = useState<QRHistoryItem[]>([])
   
   const [options, setOptions] = useState<QROptions>({
     colorDark: '#262626',
@@ -653,7 +652,7 @@ export default function QRGenerator() {
                       <Clock size={20} className="text-muted-foreground" />
                       History ({qrHistory.length})
                     </CardTitle>
-                    <ChevronDown 
+                    <CaretDown 
                       size={16} 
                       className={`text-muted-foreground transition-transform duration-200 ${
                         isHistoryOpen ? 'rotate-180' : ''
