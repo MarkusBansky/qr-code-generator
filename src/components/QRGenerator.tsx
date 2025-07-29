@@ -7,9 +7,126 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Download, QrCode, FileImage, FileSvg } from '@phosphor-icons/react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Download, QrCode, FileImage, FileSvg, Clock, ChevronDown, Copy, Trash, WifiHigh, AddressBook, Envelope, Phone, ChatCircle, MapPin } from '@phosphor-icons/react'
+import { useKV } from '@github/spark/hooks'
 
 const MAX_CHARACTERS = 2000
+
+interface QRTemplate {
+  name: string
+  icon: React.ReactNode
+  description: string
+  fields: {
+    label: string
+    key: string
+    type: 'text' | 'email' | 'tel' | 'password'
+    placeholder: string
+    required?: boolean
+  }[]
+  generateText: (values: Record<string, string>) => string
+}
+
+const QR_TEMPLATES: QRTemplate[] = [
+  {
+    name: 'WiFi Network',
+    icon: <WifiHigh size={16} />,
+    description: 'Connect to WiFi network automatically',
+    fields: [
+      { label: 'Network Name (SSID)', key: 'ssid', type: 'text', placeholder: 'MyWiFiNetwork', required: true },
+      { label: 'Password', key: 'password', type: 'password', placeholder: 'WiFi password' },
+      { label: 'Security Type', key: 'security', type: 'text', placeholder: 'WPA (leave empty for open)' }
+    ],
+    generateText: (values) => {
+      const security = values.security || 'WPA'
+      const password = values.password || ''
+      return `WIFI:T:${security};S:${values.ssid};P:${password};H:false;;`
+    }
+  },
+  {
+    name: 'Contact Card',
+    icon: <AddressBook size={16} />,
+    description: 'Save contact information directly to phone',
+    fields: [
+      { label: 'Full Name', key: 'name', type: 'text', placeholder: 'John Doe', required: true },
+      { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890' },
+      { label: 'Email', key: 'email', type: 'email', placeholder: 'john@example.com' },
+      { label: 'Organization', key: 'org', type: 'text', placeholder: 'Company Name' },
+      { label: 'Website', key: 'url', type: 'text', placeholder: 'https://example.com' }
+    ],
+    generateText: (values) => {
+      const vcard = [
+        'BEGIN:VCARD',
+        'VERSION:3.0',
+        `FN:${values.name}`,
+        values.phone ? `TEL:${values.phone}` : '',
+        values.email ? `EMAIL:${values.email}` : '',
+        values.org ? `ORG:${values.org}` : '',
+        values.url ? `URL:${values.url}` : '',
+        'END:VCARD'
+      ].filter(line => line).join('\n')
+      return vcard
+    }
+  },
+  {
+    name: 'Email',
+    icon: <Envelope size={16} />,
+    description: 'Pre-compose an email message',
+    fields: [
+      { label: 'Email Address', key: 'email', type: 'email', placeholder: 'recipient@example.com', required: true },
+      { label: 'Subject', key: 'subject', type: 'text', placeholder: 'Email subject' },
+      { label: 'Message', key: 'body', type: 'text', placeholder: 'Email message' }
+    ],
+    generateText: (values) => {
+      let mailto = `mailto:${values.email}`
+      const params = []
+      if (values.subject) params.push(`subject=${encodeURIComponent(values.subject)}`)
+      if (values.body) params.push(`body=${encodeURIComponent(values.body)}`)
+      if (params.length > 0) mailto += `?${params.join('&')}`
+      return mailto
+    }
+  },
+  {
+    name: 'Phone Call',
+    icon: <Phone size={16} />,
+    description: 'Dial a phone number directly',
+    fields: [
+      { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890', required: true }
+    ],
+    generateText: (values) => `tel:${values.phone}`
+  },
+  {
+    name: 'SMS Message',
+    icon: <ChatCircle size={16} />,
+    description: 'Send a pre-written text message',
+    fields: [
+      { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890', required: true },
+      { label: 'Message', key: 'message', type: 'text', placeholder: 'Your message here' }
+    ],
+    generateText: (values) => {
+      let sms = `sms:${values.phone}`
+      if (values.message) sms += `?body=${encodeURIComponent(values.message)}`
+      return sms
+    }
+  },
+  {
+    name: 'Location',
+    icon: <MapPin size={16} />,
+    description: 'Share GPS coordinates or address',
+    fields: [
+      { label: 'Latitude', key: 'lat', type: 'text', placeholder: '40.7128', required: true },
+      { label: 'Longitude', key: 'lng', type: 'text', placeholder: '-74.0060', required: true },
+      { label: 'Label (optional)', key: 'label', type: 'text', placeholder: 'My Location' }
+    ],
+    generateText: (values) => {
+      const geo = `geo:${values.lat},${values.lng}`
+      if (values.label) return `${geo}?q=${values.lat},${values.lng}(${encodeURIComponent(values.label)})`
+      return geo
+    }
+  }
+]
 
 interface QROptions {
   colorDark: string
@@ -18,12 +135,25 @@ interface QROptions {
   margin: number
 }
 
+interface QRHistoryItem {
+  id: string
+  text: string
+  createdAt: number
+  options: QROptions
+}
+
 export default function QRGenerator() {
   const [text, setText] = useState<string>('')
   const [qrDataUrl, setQrDataUrl] = useState<string>('')
   const [qrSvg, setQrSvg] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<QRTemplate | null>(null)
+  const [templateValues, setTemplateValues] = useState<Record<string, string>>({})
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  
+  // Use persistent storage for QR history
+  const [qrHistory, setQrHistory] = useKV<QRHistoryItem[]>("qr-history", [])
   
   const [options, setOptions] = useState<QROptions>({
     colorDark: '#262626',
@@ -38,6 +168,82 @@ export default function QRGenerator() {
       return true
     } catch {
       return str.startsWith('http://') || str.startsWith('https://') || str.includes('.')
+    }
+  }
+
+  const saveToHistory = (inputText: string, qrOptions: QROptions) => {
+    if (!inputText.trim()) return
+    
+    setQrHistory((currentHistory) => {
+      // Check if this exact text and options combination already exists
+      const existingIndex = currentHistory.findIndex(
+        item => item.text === inputText && 
+                JSON.stringify(item.options) === JSON.stringify(qrOptions)
+      )
+      
+      if (existingIndex !== -1) {
+        // Move existing item to front
+        const existing = currentHistory[existingIndex]
+        return [
+          { ...existing, createdAt: Date.now() },
+          ...currentHistory.filter((_, index) => index !== existingIndex)
+        ]
+      }
+      
+      // Add new item to front, limit to 20 items
+      const newItem: QRHistoryItem = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        text: inputText,
+        createdAt: Date.now(),
+        options: { ...qrOptions }
+      }
+      
+      return [newItem, ...currentHistory].slice(0, 20)
+    })
+  }
+
+  const loadFromHistory = (item: QRHistoryItem) => {
+    setText(item.text)
+    setOptions(item.options)
+  }
+
+  const removeFromHistory = (itemId: string) => {
+    setQrHistory((currentHistory) => 
+      currentHistory.filter(item => item.id !== itemId)
+    )
+  }
+
+  const clearHistory = () => {
+    setQrHistory([])
+  }
+
+  const selectTemplate = (template: QRTemplate) => {
+    setSelectedTemplate(template)
+    setTemplateValues({})
+    setText('')
+  }
+
+  const clearTemplate = () => {
+    setSelectedTemplate(null)
+    setTemplateValues({})
+  }
+
+  const updateTemplateValue = (key: string, value: string) => {
+    const newValues = { ...templateValues, [key]: value }
+    setTemplateValues(newValues)
+    
+    if (selectedTemplate) {
+      // Check if all required fields are filled
+      const allRequiredFilled = selectedTemplate.fields
+        .filter(field => field.required)
+        .every(field => newValues[field.key]?.trim())
+      
+      if (allRequiredFilled) {
+        const generatedText = selectedTemplate.generateText(newValues)
+        setText(generatedText)
+      } else {
+        setText('')
+      }
     }
   }
 
@@ -78,6 +284,8 @@ export default function QRGenerator() {
         }
       })
       setQrDataUrl(dataUrl)
+      
+
     } catch (error) {
       console.error('Error generating QR code:', error)
       setQrDataUrl('')
@@ -125,6 +333,9 @@ export default function QRGenerator() {
         link.href = canvas.toDataURL()
         link.click()
       }
+      
+      // Save to history only when user actually exports the QR code
+      saveToHistory(text, options)
     } catch (error) {
       console.error('Error downloading QR code:', error)
     }
@@ -148,35 +359,112 @@ export default function QRGenerator() {
 
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Input</CardTitle>
+            <CardTitle className="text-lg">Create QR Code</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="text-input" className="text-sm font-medium">
-                  Text or URL
-                </Label>
-                <Badge 
-                  variant={isOverLimit ? "destructive" : "secondary"}
-                  className="text-xs"
-                >
-                  {characterCount}/{MAX_CHARACTERS}
-                </Badge>
-              </div>
-              <Input
-                id="text-input"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Enter text or paste a URL..."
-                className={`font-mono text-sm ${isUrl(text) ? 'text-primary' : ''} ${isOverLimit ? 'border-destructive' : ''}`}
-              />
-              {text && isUrl(text) && (
-                <p className="text-xs text-primary">✓ Detected URL format</p>
-              )}
-              {isOverLimit && (
-                <p className="text-xs text-destructive">Text will be truncated to {MAX_CHARACTERS} characters</p>
-              )}
-            </div>
+          <CardContent>
+            <Tabs defaultValue="manual" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="manual" onClick={clearTemplate}>Manual Input</TabsTrigger>
+                <TabsTrigger value="templates">Templates</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="manual" className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="text-input" className="text-sm font-medium">
+                      Text or URL
+                    </Label>
+                    <Badge 
+                      variant={isOverLimit ? "destructive" : "secondary"}
+                      className="text-xs"
+                    >
+                      {characterCount}/{MAX_CHARACTERS}
+                    </Badge>
+                  </div>
+                  <Input
+                    id="text-input"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Enter text or paste a URL..."
+                    className={`font-mono text-sm ${isUrl(text) ? 'text-primary' : ''} ${isOverLimit ? 'border-destructive' : ''}`}
+                  />
+                  {text && isUrl(text) && (
+                    <p className="text-xs text-primary">✓ Detected URL format</p>
+                  )}
+                  {isOverLimit && (
+                    <p className="text-xs text-destructive">Text will be truncated to {MAX_CHARACTERS} characters</p>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="templates" className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {QR_TEMPLATES.map((template) => (
+                    <Button
+                      key={template.name}
+                      variant={selectedTemplate?.name === template.name ? "default" : "outline"}
+                      size="sm"
+                      className="h-auto p-3 flex flex-col items-center gap-2"
+                      onClick={() => selectTemplate(template)}
+                    >
+                      {template.icon}
+                      <span className="text-xs font-medium">{template.name}</span>
+                    </Button>
+                  ))}
+                </div>
+                
+                {selectedTemplate && (
+                  <div className="space-y-4 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium flex items-center gap-2">
+                          {selectedTemplate.icon}
+                          {selectedTemplate.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {selectedTemplate.description}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearTemplate}
+                        className="text-xs h-7 px-2"
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {selectedTemplate.fields.map((field) => (
+                        <div key={field.key} className="space-y-1">
+                          <Label className="text-xs font-medium">
+                            {field.label}
+                            {field.required && <span className="text-destructive ml-1">*</span>}
+                          </Label>
+                          <Input
+                            type={field.type}
+                            value={templateValues[field.key] || ''}
+                            onChange={(e) => updateTemplateValue(field.key, e.target.value)}
+                            placeholder={field.placeholder}
+                            className="text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {text && (
+                      <div className="space-y-2 pt-3 border-t">
+                        <Label className="text-xs font-medium">Generated Content</Label>
+                        <div className="p-2 bg-muted rounded text-xs font-mono break-all">
+                          {text}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
@@ -354,6 +642,92 @@ export default function QRGenerator() {
             </div>
           </CardContent>
         </Card>
+
+        {qrHistory.length > 0 && (
+          <Card>
+            <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 rounded-t-lg transition-colors">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Clock size={20} className="text-muted-foreground" />
+                      History ({qrHistory.length})
+                    </CardTitle>
+                    <ChevronDown 
+                      size={16} 
+                      className={`text-muted-foreground transition-transform duration-200 ${
+                        isHistoryOpen ? 'rotate-180' : ''
+                      }`} 
+                    />
+                  </div>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="text-sm text-muted-foreground">
+                      Previously exported QR codes
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearHistory}
+                      className="text-xs h-7 px-2 text-muted-foreground hover:text-destructive"
+                    >
+                      Clear all
+                    </Button>
+                  </div>
+                  <ScrollArea className="h-48">
+                    <div className="space-y-2">
+                      {qrHistory.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-3 p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {item.text.length > 40 
+                                ? `${item.text.substring(0, 40)}...` 
+                                : item.text
+                              }
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(item.createdAt).toLocaleDateString()} at{' '}
+                              {new Date(item.createdAt).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => loadFromHistory(item)}
+                              title="Load this QR code"
+                            >
+                              <Copy size={12} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 hover:text-destructive"
+                              onClick={() => removeFromHistory(item.id)}
+                              title="Remove from history"
+                            >
+                              <Trash size={12} />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
 
         <canvas ref={canvasRef} className="hidden" />
       </div>
