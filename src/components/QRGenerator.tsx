@@ -126,21 +126,53 @@ export default function QRGenerator() {
         link.click()
         URL.revokeObjectURL(url)
       } else {
-        const canvas = document.createElement('canvas')
-        await QRCode.toCanvas(canvas, text, {
-          width: 512,
-          margin: 3,
-          color: {
-            dark: options.colorDark,
-            light: options.colorLight
-          },
-          errorCorrectionLevel: 'H'
-        })
+        // For PNG, we need to render the SVG to canvas to preserve styling
+        if (options.dotType !== 'square') {
+          // Create a canvas from the styled SVG
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+          if (!ctx) return
+          
+          canvas.width = 512
+          canvas.height = 512
+          
+          // Create an image from the SVG
+          const svgBlob = new Blob([qrSvg], { type: 'image/svg+xml' })
+          const url = URL.createObjectURL(svgBlob)
+          const img = new Image()
+          
+          img.onload = () => {
+            ctx.fillStyle = options.colorLight
+            ctx.fillRect(0, 0, 512, 512)
+            ctx.drawImage(img, 0, 0, 512, 512)
+            
+            const link = document.createElement('a')
+            link.download = `qr-code-${Date.now()}.png`
+            link.href = canvas.toDataURL('image/png')
+            link.click()
+            
+            URL.revokeObjectURL(url)
+          }
+          
+          img.src = url
+        } else {
+          // Use the standard method for square QR codes
+          const canvas = document.createElement('canvas')
+          await QRCode.toCanvas(canvas, text, {
+            width: 512,
+            margin: 3,
+            color: {
+              dark: options.colorDark,
+              light: options.colorLight
+            },
+            errorCorrectionLevel: 'H'
+          })
 
-        const link = document.createElement('a')
-        link.download = `qr-code-${Date.now()}.png`
-        link.href = canvas.toDataURL()
-        link.click()
+          const link = document.createElement('a')
+          link.download = `qr-code-${Date.now()}.png`
+          link.href = canvas.toDataURL()
+          link.click()
+        }
       }
     } catch (error) {
       console.error('Error downloading QR code:', error)
@@ -351,11 +383,10 @@ export default function QRGenerator() {
                   <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
                     <div className="animate-pulse text-muted-foreground">Generating...</div>
                   </div>
-                ) : qrDataUrl ? (
-                  <img 
-                    src={qrDataUrl} 
-                    alt="Generated QR Code" 
-                    className="w-64 h-64 rounded-lg shadow-sm border"
+                ) : qrSvg ? (
+                  <div 
+                    className="w-64 h-64 rounded-lg shadow-sm border bg-white flex items-center justify-center [&_svg]:w-full [&_svg]:h-full [&_svg]:max-w-60 [&_svg]:max-h-60"
+                    dangerouslySetInnerHTML={{ __html: qrSvg }}
                   />
                 ) : (
                   <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
@@ -367,7 +398,7 @@ export default function QRGenerator() {
                 )}
               </div>
               
-              {qrDataUrl && (
+              {qrSvg && (
                 <div className="flex gap-2 w-full">
                   <Button 
                     onClick={() => downloadQR('png')}
