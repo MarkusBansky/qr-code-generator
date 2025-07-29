@@ -139,8 +139,7 @@ export default function QRGenerator() {
       })
       setQrDataUrl(dataUrl)
       
-      // Save to history when successfully generated
-      saveToHistory(input, options)
+
     } catch (error) {
       console.error('Error generating QR code:', error)
       setQrDataUrl('')
@@ -188,6 +187,9 @@ export default function QRGenerator() {
         link.href = canvas.toDataURL()
         link.click()
       }
+      
+      // Save to history only when user actually exports the QR code
+      saveToHistory(text, options)
     } catch (error) {
       console.error('Error downloading QR code:', error)
     }
@@ -441,7 +443,7 @@ export default function QRGenerator() {
                 <CardContent className="pt-0">
                   <div className="flex justify-between items-center mb-4">
                     <p className="text-sm text-muted-foreground">
-                      Previously generated QR codes
+                      Previously exported QR codes
                     </p>
                     <Button
                       variant="ghost"
