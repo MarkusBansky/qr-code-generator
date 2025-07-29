@@ -52,22 +52,7 @@ export default function QRGenerator() {
 
     setIsGenerating(true)
     try {
-      // Generate PNG version
-      const dataUrl = await QRCode.toDataURL(input, {
-        width: options.size,
-        margin: options.margin,
-        color: {
-          dark: options.colorDark,
-          light: options.colorLight
-        },
-        errorCorrectionLevel: 'M',
-        rendererOpts: {
-          quality: 0.92
-        }
-      })
-      setQrDataUrl(dataUrl)
-
-      // Generate SVG version with custom styling
+      // Always generate SVG first with custom styling
       let svgString = await QRCode.toString(input, {
         type: 'svg',
         width: options.size,
@@ -86,6 +71,14 @@ export default function QRGenerator() {
         svgString = svgString.replace(/<rect/g, '<rect rx="0.4" ry="0.4"')
       } else if (options.dotType === 'dots') {
         // Convert rectangles to circles for dot style
+        svgString = svgString.replace(/<rect x="([^"]*)" y="([^"]*)" width="([^"]*)" height="[^"]*"[^>]*>/g, 
+          (match, x, y, width) => {
+            const cx = parseFloat(x) + parseFloat(width) / 2
+            const cy = parseFloat(y) + parseFloat(width) / 2
+            const r = parseFloat(width) * 0.4
+            return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${options.colorDark}">`
+          })
+        // Also handle self-closing rect tags
         svgString = svgString.replace(/<rect x="([^"]*)" y="([^"]*)" width="([^"]*)" height="[^"]*"[^>]*\/>/g, 
           (match, x, y, width) => {
             const cx = parseFloat(x) + parseFloat(width) / 2
@@ -96,6 +89,25 @@ export default function QRGenerator() {
       }
       
       setQrSvg(svgString)
+
+      // Generate PNG version for fallback (only if square style)
+      if (options.dotType === 'square') {
+        const dataUrl = await QRCode.toDataURL(input, {
+          width: options.size,
+          margin: options.margin,
+          color: {
+            dark: options.colorDark,
+            light: options.colorLight
+          },
+          errorCorrectionLevel: 'M',
+          rendererOpts: {
+            quality: 0.92
+          }
+        })
+        setQrDataUrl(dataUrl)
+      } else {
+        setQrDataUrl('')
+      }
     } catch (error) {
       console.error('Error generating QR code:', error)
       setQrDataUrl('')
@@ -385,9 +397,15 @@ export default function QRGenerator() {
                   </div>
                 ) : qrSvg ? (
                   <div 
-                    className="w-64 h-64 rounded-lg shadow-sm border bg-white flex items-center justify-center [&_svg]:w-full [&_svg]:h-full [&_svg]:max-w-60 [&_svg]:max-h-60"
-                    dangerouslySetInnerHTML={{ __html: qrSvg }}
-                  />
+                    key={`${options.dotType}-${options.colorDark}-${options.colorLight}-${options.size}`}
+                    className="w-64 h-64 rounded-lg shadow-sm border flex items-center justify-center p-2"
+                    style={{ backgroundColor: options.colorLight }}
+                  >
+                    <div 
+                      className="w-full h-full [&_svg]:w-full [&_svg]:h-full"
+                      dangerouslySetInnerHTML={{ __html: qrSvg }}
+                    />
+                  </div>
                 ) : (
                   <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
                     <div className="text-center text-muted-foreground">
