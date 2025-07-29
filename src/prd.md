@@ -27,7 +27,6 @@
 - Input validation and error handling
 
 ### QR Code Customization
-- **Style Options**: Square, Rounded, Bubble (extra-rounded), Dots
 - **Color Customization**: Full color picker for foreground/background colors
 - **Color Presets**: Quick-select popular color combinations (Black/White, Blue theme, Green theme, Red theme)
 - **Size Options**: Small (200px), Medium (256px), Large (320px), Extra Large (400px)
@@ -36,7 +35,7 @@
 ### Export Capabilities
 - **PNG Export**: High-quality raster format for general use, presentations, printing
 - **SVG Export**: Vector format for scalable graphics, web use, professional printing
-- Both formats respect customization settings (colors, styles, sizes)
+- Both formats maintain consistent square QR code styling
 
 ### Privacy & Performance
 - **No Server Dependency**: All processing happens client-side
@@ -77,7 +76,7 @@
 - **Card Components**: Clear section separation and visual grouping
 - **Input Controls**: Shadcn components for consistency and accessibility
 - **Color Pickers**: Dual approach (visual picker + hex input) for precision and convenience
-- **Select Dropdowns**: Clear option presentation for style and size choices
+- **Select Dropdowns**: Clear option presentation for size choices
 - **Button Groups**: Paired download options with clear format distinction
 - **Progress Indicators**: Subtle loading states and character count feedback
 
