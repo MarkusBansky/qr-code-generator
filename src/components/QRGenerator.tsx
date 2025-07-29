@@ -12,7 +12,6 @@ import { Download, QrCode, FileImage, FileSvg } from '@phosphor-icons/react'
 const MAX_CHARACTERS = 2000
 
 interface QROptions {
-  dotType: 'square' | 'rounded' | 'dots' | 'extra-rounded'
   colorDark: string
   colorLight: string
   size: number
@@ -27,7 +26,6 @@ export default function QRGenerator() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   
   const [options, setOptions] = useState<QROptions>({
-    dotType: 'square',
     colorDark: '#262626',
     colorLight: '#FFFFFF',
     size: 256,
@@ -52,8 +50,8 @@ export default function QRGenerator() {
 
     setIsGenerating(true)
     try {
-      // Always generate SVG first with custom styling
-      let svgString = await QRCode.toString(input, {
+      // Generate SVG version
+      const svgString = await QRCode.toString(input, {
         type: 'svg',
         width: options.size,
         margin: options.margin,
@@ -64,50 +62,22 @@ export default function QRGenerator() {
         errorCorrectionLevel: 'M'
       })
       
-      // Apply custom styling based on options
-      if (options.dotType === 'rounded') {
-        svgString = svgString.replace(/<rect/g, '<rect rx="0.15" ry="0.15"')
-      } else if (options.dotType === 'extra-rounded') {
-        svgString = svgString.replace(/<rect/g, '<rect rx="0.4" ry="0.4"')
-      } else if (options.dotType === 'dots') {
-        // Convert rectangles to circles for dot style
-        svgString = svgString.replace(/<rect x="([^"]*)" y="([^"]*)" width="([^"]*)" height="[^"]*"[^>]*>/g, 
-          (match, x, y, width) => {
-            const cx = parseFloat(x) + parseFloat(width) / 2
-            const cy = parseFloat(y) + parseFloat(width) / 2
-            const r = parseFloat(width) * 0.4
-            return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${options.colorDark}">`
-          })
-        // Also handle self-closing rect tags
-        svgString = svgString.replace(/<rect x="([^"]*)" y="([^"]*)" width="([^"]*)" height="[^"]*"[^>]*\/>/g, 
-          (match, x, y, width) => {
-            const cx = parseFloat(x) + parseFloat(width) / 2
-            const cy = parseFloat(y) + parseFloat(width) / 2
-            const r = parseFloat(width) * 0.4
-            return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${options.colorDark}"/>`
-          })
-      }
-      
       setQrSvg(svgString)
 
-      // Generate PNG version for fallback (only if square style)
-      if (options.dotType === 'square') {
-        const dataUrl = await QRCode.toDataURL(input, {
-          width: options.size,
-          margin: options.margin,
-          color: {
-            dark: options.colorDark,
-            light: options.colorLight
-          },
-          errorCorrectionLevel: 'M',
-          rendererOpts: {
-            quality: 0.92
-          }
-        })
-        setQrDataUrl(dataUrl)
-      } else {
-        setQrDataUrl('')
-      }
+      // Generate PNG version
+      const dataUrl = await QRCode.toDataURL(input, {
+        width: options.size,
+        margin: options.margin,
+        color: {
+          dark: options.colorDark,
+          light: options.colorLight
+        },
+        errorCorrectionLevel: 'M',
+        rendererOpts: {
+          quality: 0.92
+        }
+      })
+      setQrDataUrl(dataUrl)
     } catch (error) {
       console.error('Error generating QR code:', error)
       setQrDataUrl('')
@@ -138,53 +108,22 @@ export default function QRGenerator() {
         link.click()
         URL.revokeObjectURL(url)
       } else {
-        // For PNG, we need to render the SVG to canvas to preserve styling
-        if (options.dotType !== 'square') {
-          // Create a canvas from the styled SVG
-          const canvas = document.createElement('canvas')
-          const ctx = canvas.getContext('2d')
-          if (!ctx) return
-          
-          canvas.width = 512
-          canvas.height = 512
-          
-          // Create an image from the SVG
-          const svgBlob = new Blob([qrSvg], { type: 'image/svg+xml' })
-          const url = URL.createObjectURL(svgBlob)
-          const img = new Image()
-          
-          img.onload = () => {
-            ctx.fillStyle = options.colorLight
-            ctx.fillRect(0, 0, 512, 512)
-            ctx.drawImage(img, 0, 0, 512, 512)
-            
-            const link = document.createElement('a')
-            link.download = `qr-code-${Date.now()}.png`
-            link.href = canvas.toDataURL('image/png')
-            link.click()
-            
-            URL.revokeObjectURL(url)
-          }
-          
-          img.src = url
-        } else {
-          // Use the standard method for square QR codes
-          const canvas = document.createElement('canvas')
-          await QRCode.toCanvas(canvas, text, {
-            width: 512,
-            margin: 3,
-            color: {
-              dark: options.colorDark,
-              light: options.colorLight
-            },
-            errorCorrectionLevel: 'H'
-          })
+        // Use the standard method for PNG download
+        const canvas = document.createElement('canvas')
+        await QRCode.toCanvas(canvas, text, {
+          width: 512,
+          margin: 3,
+          color: {
+            dark: options.colorDark,
+            light: options.colorLight
+          },
+          errorCorrectionLevel: 'H'
+        })
 
-          const link = document.createElement('a')
-          link.download = `qr-code-${Date.now()}.png`
-          link.href = canvas.toDataURL()
-          link.click()
-        }
+        const link = document.createElement('a')
+        link.download = `qr-code-${Date.now()}.png`
+        link.href = canvas.toDataURL()
+        link.click()
       }
     } catch (error) {
       console.error('Error downloading QR code:', error)
@@ -246,46 +185,24 @@ export default function QRGenerator() {
             <CardTitle className="text-lg">Customize</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Style</Label>
-                <Select 
-                  value={options.dotType} 
-                  onValueChange={(value: 'square' | 'rounded' | 'dots' | 'extra-rounded') => 
-                    setOptions(prev => ({ ...prev, dotType: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="square">Square</SelectItem>
-                    <SelectItem value="rounded">Rounded</SelectItem>
-                    <SelectItem value="extra-rounded">Bubble</SelectItem>
-                    <SelectItem value="dots">Dots</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Size</Label>
-                <Select 
-                  value={options.size.toString()} 
-                  onValueChange={(value) => 
-                    setOptions(prev => ({ ...prev, size: parseInt(value) }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="200">Small (200px)</SelectItem>
-                    <SelectItem value="256">Medium (256px)</SelectItem>
-                    <SelectItem value="320">Large (320px)</SelectItem>
-                    <SelectItem value="400">Extra Large (400px)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Size</Label>
+              <Select 
+                value={options.size.toString()} 
+                onValueChange={(value) => 
+                  setOptions(prev => ({ ...prev, size: parseInt(value) }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="200">Small (200px)</SelectItem>
+                  <SelectItem value="256">Medium (256px)</SelectItem>
+                  <SelectItem value="320">Large (320px)</SelectItem>
+                  <SelectItem value="400">Extra Large (400px)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Separator />
@@ -397,7 +314,6 @@ export default function QRGenerator() {
                   </div>
                 ) : qrSvg ? (
                   <div 
-                    key={`${options.dotType}-${options.colorDark}-${options.colorLight}-${options.size}`}
                     className="w-64 h-64 rounded-lg shadow-sm border flex items-center justify-center p-2"
                     style={{ backgroundColor: options.colorLight }}
                   >
