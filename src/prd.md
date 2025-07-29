@@ -16,7 +16,8 @@
 - **Key Moments**: 
   1. Real-time QR code generation as user types
   2. Visual customization with live preview
-  3. Format choice (PNG vs SVG) for different use cases
+  3. Logo upload and positioning with immediate preview
+  4. Format choice (PNG vs SVG) for different use cases
 
 ## Essential Features
 
@@ -30,11 +31,19 @@
 - **Color Customization**: Full color picker for foreground/background colors
 - **Color Presets**: Quick-select popular color combinations (Black/White, Blue theme, Green theme, Red theme)
 - **Size Options**: Small (200px), Medium (256px), Large (320px), Extra Large (400px)
-- **Live Preview**: Immediate visual feedback for all customization changes
+- **Logo Overlay**: Upload custom images/logos and position them on the QR code
+  - Support for all common image formats (PNG, JPG, GIF, SVG)
+  - Adjustable logo size (10-40% of QR code size)
+  - Precise positioning controls (X/Y coordinates)
+  - Automatic background circle for logo visibility
+  - File size validation (max 2MB) with user feedback
+- **Live Preview**: Immediate visual feedback for all customization changes including logo positioning
 
 ### Export Capabilities
-- **PNG Export**: High-quality raster format for general use, presentations, printing
-- **SVG Export**: Vector format for scalable graphics, web use, professional printing
+- **PNG Export**: High-quality raster format for general use, presentations, printing (with logo overlay support)
+- **SVG Export**: Vector format for scalable graphics, web use, professional printing (with embedded logo support)
+- **Logo Integration**: Both export formats maintain logo positioning and scaling
+- **High Resolution**: Download versions use 512px resolution for crisp printing
 - Both formats maintain consistent square QR code styling
 
 ### Privacy & Performance
@@ -75,10 +84,13 @@
 ### UI Elements & Component Selection
 - **Card Components**: Clear section separation and visual grouping
 - **Input Controls**: Shadcn components for consistency and accessibility
+- **File Upload**: Hidden file input with custom button trigger for logo uploads
+- **Range Sliders**: Custom-styled sliders for logo size and positioning controls
 - **Color Pickers**: Dual approach (visual picker + hex input) for precision and convenience
 - **Select Dropdowns**: Clear option presentation for size choices
 - **Button Groups**: Paired download options with clear format distinction
 - **Progress Indicators**: Subtle loading states and character count feedback
+- **Image Preview**: Real-time logo overlay preview with positioning guides
 
 ### Animations
 - **Purposeful Meaning**: Smooth transitions communicate app responsiveness
@@ -95,6 +107,9 @@
 - **Empty Input**: Clear placeholder state with helpful messaging
 - **Overlong Input**: Graceful truncation with clear feedback
 - **Invalid Colors**: Fallback to defaults if invalid hex codes entered
+- **Logo Upload Issues**: File type validation, size limits, and clear error messaging
+- **Large Logo Files**: 2MB limit with user-friendly file size feedback
+- **Logo Positioning**: Boundary constraints to keep logos within QR code area
 - **Generation Errors**: User-friendly error messages with recovery guidance
 - **Download Failures**: Retry mechanisms and alternative download methods
 
