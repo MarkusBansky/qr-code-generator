@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "vite",
     "kill": "fuser -k 5000/tcp",
-    "prebuild": "sed -i '/@github/spark/d' package.json",
-    "build": "tsc -b --noCheck && vite build --config vite.config.build.ts",
+    "build": "tsc -b --noCheck && vite build",
     "lint": "eslint .",
     "optimize": "vite optimize",
     "preview": "vite preview"
