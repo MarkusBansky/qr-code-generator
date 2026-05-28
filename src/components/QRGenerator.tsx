@@ -1,43 +1,34 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import QRCode from 'qrcode'
 import {
-  Badge,
-  Box,
-  Button,
-  Callout,
-  Card,
-  Container,
-  Flex,
-  Grid,
-  Heading,
-  IconButton,
-  Inset,
-  ScrollArea,
-  Section,
-  Select,
-  Separator,
-  Tabs,
-  Text,
-  TextArea,
-  TextField,
-} from '@radix-ui/themes'
-import * as Collapsible from '@radix-ui/react-collapsible'
-import {
-  CaretDownIcon,
-  ChatBubbleIcon,
-  ClockIcon,
-  CodeIcon,
-  CopyIcon,
-  DownloadIcon,
-  EnvelopeClosedIcon,
-  FileTextIcon,
-  GlobeIcon,
-  ImageIcon,
-  MobileIcon,
-  PersonIcon,
-  SewingPinIcon,
-  TrashIcon,
-} from '@radix-ui/react-icons'
+  AddressBook,
+  CaretDown,
+  ChatCircle,
+  Clock,
+  Copy,
+  Download,
+  Envelope,
+  FileImage,
+  FileSvg,
+  MapPin,
+  Phone,
+  QrCode,
+  Trash,
+  WifiHigh,
+} from '@phosphor-icons/react'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 
 const MAX_CHARACTERS = 2000
 
@@ -45,7 +36,7 @@ type TemplateFieldType = 'text' | 'email' | 'tel' | 'password'
 
 interface QRTemplate {
   name: string
-  icon: React.ReactNode
+  icon: ReactNode
   description: string
   fields: {
     label: string
@@ -60,7 +51,7 @@ interface QRTemplate {
 const QR_TEMPLATES: QRTemplate[] = [
   {
     name: 'WiFi Network',
-    icon: <GlobeIcon />,
+    icon: <WifiHigh aria-hidden="true" weight="bold" />,
     description: 'Connect to WiFi network automatically',
     fields: [
       { label: 'Network Name (SSID)', key: 'ssid', type: 'text', placeholder: 'MyWiFiNetwork', required: true },
@@ -75,7 +66,7 @@ const QR_TEMPLATES: QRTemplate[] = [
   },
   {
     name: 'Contact Card',
-    icon: <PersonIcon />,
+    icon: <AddressBook aria-hidden="true" weight="bold" />,
     description: 'Save contact information directly to phone',
     fields: [
       { label: 'Full Name', key: 'name', type: 'text', placeholder: 'John Doe', required: true },
@@ -97,7 +88,7 @@ const QR_TEMPLATES: QRTemplate[] = [
   },
   {
     name: 'Email',
-    icon: <EnvelopeClosedIcon />,
+    icon: <Envelope aria-hidden="true" weight="bold" />,
     description: 'Pre-compose an email message',
     fields: [
       { label: 'Email Address', key: 'email', type: 'email', placeholder: 'recipient@example.com', required: true },
@@ -115,7 +106,7 @@ const QR_TEMPLATES: QRTemplate[] = [
   },
   {
     name: 'Phone Call',
-    icon: <MobileIcon />,
+    icon: <Phone aria-hidden="true" weight="bold" />,
     description: 'Dial a phone number directly',
     fields: [
       { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890', required: true },
@@ -124,7 +115,7 @@ const QR_TEMPLATES: QRTemplate[] = [
   },
   {
     name: 'SMS Message',
-    icon: <ChatBubbleIcon />,
+    icon: <ChatCircle aria-hidden="true" weight="bold" />,
     description: 'Send a pre-written text message',
     fields: [
       { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890', required: true },
@@ -138,7 +129,7 @@ const QR_TEMPLATES: QRTemplate[] = [
   },
   {
     name: 'Location',
-    icon: <SewingPinIcon />,
+    icon: <MapPin aria-hidden="true" weight="bold" />,
     description: 'Share GPS coordinates or address',
     fields: [
       { label: 'Latitude', key: 'lat', type: 'text', placeholder: '40.7128', required: true },
@@ -168,11 +159,13 @@ interface QRHistoryItem {
 }
 
 const COLOR_PRESETS = [
-  { name: 'Classic', dark: '#0f172a', light: '#ffffff' },
-  { name: 'Cyan', dark: '#06b6d4', light: '#08111c' },
-  { name: 'Violet', dark: '#a78bfa', light: '#111827' },
-  { name: 'Amber', dark: '#f59e0b', light: '#111111' },
+  { name: 'Classic', dark: '#111827', light: '#ffffff' },
+  { name: 'Slate', dark: '#f8fafc', light: '#0f172a' },
+  { name: 'Blue', dark: '#1d4ed8', light: '#eff6ff' },
+  { name: 'Green', dark: '#166534', light: '#f0fdf4' },
 ]
+
+const helperTextId = 'qr-text-helper'
 
 export default function QRGenerator() {
   const [text, setText] = useState('')
@@ -184,7 +177,7 @@ export default function QRGenerator() {
   const [templateValues, setTemplateValues] = useState<Record<string, string>>({})
   const [qrHistory, setQrHistory] = useState<QRHistoryItem[]>([])
   const [options, setOptions] = useState<QROptions>({
-    colorDark: '#0f172a',
+    colorDark: '#111827',
     colorLight: '#ffffff',
     size: 256,
     margin: 2,
@@ -339,283 +332,331 @@ export default function QRGenerator() {
   }
 
   return (
-    <Section size="3" className="app-shell">
-      <Container size="4">
-        <Flex direction="column" gap="6">
-          <Flex direction="column" align="center" gap="3" className="hero-copy">
-            <Badge size="3" variant="soft" color="cyan">
-              <CodeIcon /> Dark Radix QR Studio
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <section aria-labelledby="page-title" className="rounded-xl border bg-card p-5 text-card-foreground shadow-none sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-2xl space-y-2">
+            <Badge variant="secondary" className="w-fit gap-2 rounded-md px-3 py-1">
+              <QrCode aria-hidden="true" size={16} weight="bold" />
+              Plain shadcn QR tool
             </Badge>
-            <Heading size="9" align="center" trim="start">
+            <h1 id="page-title" className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               QR Generator
-            </Heading>
-            <Text size="3" color="gray" align="center" className="hero-subtitle">
-              Generate QR codes from text, URLs, or guided templates with a focused dark Radix interface.
-            </Text>
-          </Flex>
+            </h1>
+            <p className="text-base leading-7 text-muted-foreground">
+              A flat, high-contrast workspace with clear sections, steady spacing, and no decorative effects.
+            </p>
+          </div>
+          <div className="rounded-lg border bg-muted px-4 py-3 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">ADHD-friendly:</span> calm colors, predictable layout, focused actions.
+          </div>
+        </div>
+      </section>
 
-          <Grid columns={{ initial: '1', lg: '2' }} gap="5" align="start">
-            <Flex direction="column" gap="5">
-              <Card size="4" className="glass-card">
-                <Flex direction="column" gap="4">
-                  <Flex justify="between" align="start" gap="3">
-                    <Box>
-                      <Heading size="5">Create QR Code</Heading>
-                      <Text size="2" color="gray">Start manually or choose a Radix-powered template.</Text>
-                    </Box>
-                    <Badge color={isOverLimit ? 'red' : 'gray'} variant="soft">
-                      {characterCount}/{MAX_CHARACTERS}
-                    </Badge>
-                  </Flex>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
+        <div className="space-y-6">
+          <Card className="shadow-none">
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle>Create QR Code</CardTitle>
+                  <CardDescription>Enter content manually or choose one guided template.</CardDescription>
+                </div>
+                <Badge variant={isOverLimit ? 'destructive' : 'outline'} aria-live="polite" className="w-fit">
+                  {characterCount}/{MAX_CHARACTERS}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="manual" className="gap-4">
+                <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg shadow-none">
+                  <TabsTrigger value="manual" onClick={clearTemplate} className="min-h-11 shadow-none data-[state=active]:shadow-none">
+                    Manual Input
+                  </TabsTrigger>
+                  <TabsTrigger value="templates" className="min-h-11 shadow-none data-[state=active]:shadow-none">
+                    Templates
+                  </TabsTrigger>
+                </TabsList>
 
-                  <Tabs.Root defaultValue="manual">
-                    <Tabs.List>
-                      <Tabs.Trigger value="manual" onClick={clearTemplate}>Manual Input</Tabs.Trigger>
-                      <Tabs.Trigger value="templates">Templates</Tabs.Trigger>
-                    </Tabs.List>
+                <TabsContent value="manual" className="mt-4">
+                  <div className="space-y-3">
+                    <Label htmlFor="text-input">Text or URL</Label>
+                    <Textarea
+                      id="text-input"
+                      value={text}
+                      onChange={(event) => setText(event.target.value)}
+                      placeholder="Enter text or paste a URL..."
+                      aria-describedby={helperTextId}
+                      aria-invalid={isOverLimit}
+                      className="min-h-32 resize-y text-base leading-7 shadow-none md:text-base"
+                    />
+                    <div id={helperTextId} className="space-y-2 text-sm" aria-live="polite">
+                      <p className="text-muted-foreground">Preview updates after you pause typing. Long text is limited for reliable QR scanning.</p>
+                      {text && isUrl(text) && <p className="font-medium text-primary">Detected URL format.</p>}
+                      {isOverLimit && <p className="font-medium text-destructive">Text will be truncated to {MAX_CHARACTERS} characters.</p>}
+                    </div>
+                  </div>
+                </TabsContent>
 
-                    <Box pt="4">
-                      <Tabs.Content value="manual">
-                        <Flex direction="column" gap="3">
-                          <Text as="label" size="2" weight="medium" htmlFor="text-input">Text or URL</Text>
-                          <TextArea
-                            id="text-input"
-                            value={text}
-                            onChange={(event) => setText(event.target.value)}
-                            placeholder="Enter text or paste a URL..."
-                            size="3"
-                            resize="vertical"
-                          />
-                          {text && isUrl(text) && <Text size="2" color="cyan">✓ Detected URL format</Text>}
-                          {isOverLimit && (
-                            <Callout.Root color="red" variant="soft">
-                              <Callout.Text>Text will be truncated to {MAX_CHARACTERS} characters.</Callout.Text>
-                            </Callout.Root>
-                          )}
-                        </Flex>
-                      </Tabs.Content>
-
-                      <Tabs.Content value="templates">
-                        <Flex direction="column" gap="4">
-                          <Grid columns={{ initial: '1', sm: '2' }} gap="3">
-                            {QR_TEMPLATES.map((template) => (
-                              <Button
-                                key={template.name}
-                                variant={selectedTemplate?.name === template.name ? 'solid' : 'soft'}
-                                color={selectedTemplate?.name === template.name ? 'cyan' : 'gray'}
-                                size="3"
-                                className="template-button"
-                                onClick={() => selectTemplate(template)}
-                              >
-                                {template.icon}
-                                {template.name}
-                              </Button>
-                            ))}
-                          </Grid>
-
-                          {selectedTemplate && (
-                            <Card variant="surface">
-                              <Flex direction="column" gap="4">
-                                <Flex justify="between" align="start" gap="3">
-                                  <Box>
-                                    <Flex gap="2" align="center">
-                                      {selectedTemplate.icon}
-                                      <Heading size="4">{selectedTemplate.name}</Heading>
-                                    </Flex>
-                                    <Text size="2" color="gray">{selectedTemplate.description}</Text>
-                                  </Box>
-                                  <Button variant="ghost" color="gray" size="2" onClick={clearTemplate}>Clear</Button>
-                                </Flex>
-
-                                <Grid columns={{ initial: '1', sm: '2' }} gap="3">
-                                  {selectedTemplate.fields.map((field) => (
-                                    <Flex key={field.key} direction="column" gap="2">
-                                      <Text as="label" size="2" weight="medium">
-                                        {field.label}{field.required && <Text color="red"> *</Text>}
-                                      </Text>
-                                      <TextField.Root
-                                        type={field.type}
-                                        value={templateValues[field.key] || ''}
-                                        onChange={(event) => updateTemplateValue(field.key, event.target.value)}
-                                        placeholder={field.placeholder}
-                                      />
-                                    </Flex>
-                                  ))}
-                                </Grid>
-
-                                {text && (
-                                  <Callout.Root color="cyan" variant="soft">
-                                    <Callout.Icon><FileTextIcon /></Callout.Icon>
-                                    <Callout.Text className="generated-content">{text}</Callout.Text>
-                                  </Callout.Root>
-                                )}
-                              </Flex>
-                            </Card>
-                          )}
-                        </Flex>
-                      </Tabs.Content>
-                    </Box>
-                  </Tabs.Root>
-                </Flex>
-              </Card>
-
-              <Card size="4" className="glass-card">
-                <Flex direction="column" gap="4">
-                  <Box>
-                    <Heading size="5">Customize</Heading>
-                    <Text size="2" color="gray">Fine-tune size and contrast while staying in the dark theme.</Text>
-                  </Box>
-
-                  <Flex direction="column" gap="2">
-                    <Text as="label" size="2" weight="medium">Size</Text>
-                    <Select.Root
-                      value={options.size.toString()}
-                      onValueChange={(value) => setOptions((prev) => ({ ...prev, size: Number.parseInt(value, 10) }))}
-                    >
-                      <Select.Trigger />
-                      <Select.Content>
-                        <Select.Item value="200">Small (200px)</Select.Item>
-                        <Select.Item value="256">Medium (256px)</Select.Item>
-                        <Select.Item value="320">Large (320px)</Select.Item>
-                        <Select.Item value="400">Extra Large (400px)</Select.Item>
-                      </Select.Content>
-                    </Select.Root>
-                  </Flex>
-
-                  <Separator size="4" />
-
-                  <Flex direction="column" gap="3">
-                    <Text size="2" weight="medium">Color Presets</Text>
-                    <Grid columns={{ initial: '2', sm: '4' }} gap="2">
-                      {COLOR_PRESETS.map((preset) => (
+                <TabsContent value="templates" className="mt-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {QR_TEMPLATES.map((template) => (
                         <Button
-                          key={preset.name}
-                          variant="soft"
-                          color="gray"
-                          onClick={() => setOptions((prev) => ({ ...prev, colorDark: preset.dark, colorLight: preset.light }))}
+                          key={template.name}
+                          type="button"
+                          variant={selectedTemplate?.name === template.name ? 'default' : 'outline'}
+                          className="min-h-14 justify-start rounded-lg px-4 shadow-none"
+                          onClick={() => selectTemplate(template)}
+                          aria-pressed={selectedTemplate?.name === template.name}
                         >
-                          <Flex gap="2" align="center">
-                            <Box className="swatch" style={{ backgroundColor: preset.dark }} />
-                            <Box className="swatch" style={{ backgroundColor: preset.light }} />
-                            {preset.name}
-                          </Flex>
+                          {template.icon}
+                          <span>{template.name}</span>
                         </Button>
                       ))}
-                    </Grid>
-                  </Flex>
+                    </div>
 
-                  <Grid columns={{ initial: '1', sm: '2' }} gap="3">
-                    <Flex direction="column" gap="2">
-                      <Text as="label" size="2" weight="medium" htmlFor="color-dark">Foreground Color</Text>
-                      <TextField.Root
-                        id="color-dark"
-                        value={options.colorDark}
-                        onChange={(event) => setOptions((prev) => ({ ...prev, colorDark: event.target.value }))}
-                        placeholder="#0f172a"
-                      />
-                    </Flex>
-                    <Flex direction="column" gap="2">
-                      <Text as="label" size="2" weight="medium" htmlFor="color-light">Background Color</Text>
-                      <TextField.Root
-                        id="color-light"
-                        value={options.colorLight}
-                        onChange={(event) => setOptions((prev) => ({ ...prev, colorLight: event.target.value }))}
-                        placeholder="#ffffff"
-                      />
-                    </Flex>
-                  </Grid>
-                </Flex>
-              </Card>
-            </Flex>
+                    {selectedTemplate && (
+                      <div className="rounded-xl border bg-background p-4">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="space-y-1">
+                            <h2 className="flex items-center gap-2 text-lg font-semibold">
+                              {selectedTemplate.icon}
+                              {selectedTemplate.name}
+                            </h2>
+                            <p className="text-sm text-muted-foreground">{selectedTemplate.description}</p>
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" onClick={clearTemplate}>
+                            Clear
+                          </Button>
+                        </div>
 
-            <Flex direction="column" gap="5" className="preview-column">
-              <Card size="4" className="glass-card preview-card">
-                <Flex direction="column" gap="4" align="center">
-                  <Flex direction="column" gap="1" align="center">
-                    <Heading size="5">QR Code</Heading>
-                    <Text size="2" color="gray" align="center">Preview updates automatically as you type.</Text>
-                  </Flex>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          {selectedTemplate.fields.map((field) => {
+                            const fieldId = `template-${selectedTemplate.name}-${field.key}`.replace(/\s+/g, '-').toLowerCase()
+                            return (
+                              <div key={field.key} className="space-y-2">
+                                <Label htmlFor={fieldId}>
+                                  {field.label}
+                                  {field.required && <span className="ml-1 text-destructive" aria-label="required">*</span>}
+                                </Label>
+                                <Input
+                                  id={fieldId}
+                                  type={field.type}
+                                  value={templateValues[field.key] || ''}
+                                  onChange={(event) => updateTemplateValue(field.key, event.target.value)}
+                                  placeholder={field.placeholder}
+                                  required={field.required}
+                                  className="min-h-11 text-base shadow-none md:text-base"
+                                />
+                              </div>
+                            )
+                          })}
+                        </div>
 
-                  <Inset clip="padding-box" p="current">
-                    <Flex align="center" justify="center" className="qr-frame">
-                      {isGenerating ? (
-                        <Text color="gray">Generating...</Text>
-                      ) : qrDataUrl ? (
-                        <img src={qrDataUrl} width={options.size} height={options.size} alt="Generated QR code" className="qr-image" />
-                      ) : (
-                        <Flex direction="column" align="center" gap="3" className="empty-state">
-                          <CodeIcon width="48" height="48" />
-                          <Text size="2" color="gray" align="center">Enter text to generate QR code</Text>
-                        </Flex>
-                      )}
-                    </Flex>
-                  </Inset>
+                        {text && (
+                          <div className="mt-4 rounded-lg border bg-muted p-3" aria-live="polite">
+                            <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">Generated Content</Label>
+                            <p className="break-all font-mono text-sm leading-6 text-foreground">{text}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
 
-                  {qrDataUrl && (
-                    <Grid columns="2" gap="3" width="100%">
-                      <Button size="3" color="cyan" onClick={() => downloadQR('png')}>
-                        <ImageIcon /> PNG
-                      </Button>
-                      <Button size="3" variant="soft" color="gray" onClick={() => downloadQR('svg')}>
-                        <DownloadIcon /> SVG
-                      </Button>
-                    </Grid>
+          <Card className="shadow-none">
+            <CardHeader>
+              <CardTitle>Customize</CardTitle>
+              <CardDescription>Choose readable QR colors and a comfortable preview size.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="size-select">Size</Label>
+                <Select
+                  value={options.size.toString()}
+                  onValueChange={(value) => setOptions((prev) => ({ ...prev, size: Number.parseInt(value, 10) }))}
+                >
+                  <SelectTrigger id="size-select" className="min-h-11 w-full shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="shadow-none">
+                    <SelectItem value="200">Small (200px)</SelectItem>
+                    <SelectItem value="256">Medium (256px)</SelectItem>
+                    <SelectItem value="320">Large (320px)</SelectItem>
+                    <SelectItem value="400">Extra Large (400px)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <Label asChild>
+                  <span>Color Presets</span>
+                </Label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {COLOR_PRESETS.map((preset) => (
+                    <Button
+                      key={preset.name}
+                      type="button"
+                      variant="outline"
+                      className="min-h-11 justify-start rounded-lg shadow-none"
+                      onClick={() => setOptions((prev) => ({ ...prev, colorDark: preset.dark, colorLight: preset.light }))}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="size-3 rounded-sm border" style={{ backgroundColor: preset.dark }} aria-hidden="true" />
+                        <span className="size-3 rounded-sm border" style={{ backgroundColor: preset.light }} aria-hidden="true" />
+                        {preset.name}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="color-dark">Foreground Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="color-dark"
+                      type="color"
+                      value={options.colorDark}
+                      onChange={(event) => setOptions((prev) => ({ ...prev, colorDark: event.target.value }))}
+                      className="h-11 w-14 shrink-0 cursor-pointer p-1 shadow-none"
+                      aria-label="Foreground color picker"
+                    />
+                    <Input
+                      value={options.colorDark}
+                      onChange={(event) => setOptions((prev) => ({ ...prev, colorDark: event.target.value }))}
+                      className="min-h-11 font-mono text-base shadow-none md:text-sm"
+                      aria-label="Foreground color hex value"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="color-light">Background Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="color-light"
+                      type="color"
+                      value={options.colorLight}
+                      onChange={(event) => setOptions((prev) => ({ ...prev, colorLight: event.target.value }))}
+                      className="h-11 w-14 shrink-0 cursor-pointer p-1 shadow-none"
+                      aria-label="Background color picker"
+                    />
+                    <Input
+                      value={options.colorLight}
+                      onChange={(event) => setOptions((prev) => ({ ...prev, colorLight: event.target.value }))}
+                      className="min-h-11 font-mono text-base shadow-none md:text-sm"
+                      aria-label="Background color hex value"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <aside className="space-y-6 lg:sticky lg:top-6" aria-label="QR preview and history">
+          <Card className="shadow-none">
+            <CardHeader className="text-center">
+              <CardTitle>QR Code</CardTitle>
+              <CardDescription>Preview updates automatically as you type.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex min-h-72 w-full items-center justify-center rounded-xl border bg-muted p-4" role="status" aria-live="polite">
+                  {isGenerating ? (
+                    <p className="text-sm text-muted-foreground">Generating QR code…</p>
+                  ) : qrDataUrl ? (
+                    <img src={qrDataUrl} width={options.size} height={options.size} alt="Generated QR code" className="h-auto max-w-full rounded-md border bg-white" />
+                  ) : (
+                    <div className="space-y-3 text-center text-muted-foreground">
+                      <QrCode aria-hidden="true" size={52} className="mx-auto" />
+                      <p className="text-sm">Enter text to generate QR code.</p>
+                    </div>
                   )}
-                </Flex>
-              </Card>
+                </div>
 
-              {qrHistory.length > 0 && (
-                <Card size="4" className="glass-card">
-                  <Collapsible.Root open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-                    <Collapsible.Trigger asChild>
-                      <Button variant="ghost" color="gray" className="history-trigger">
-                        <Flex justify="between" align="center" width="100%">
-                          <Flex gap="2" align="center">
-                            <ClockIcon />
-                            <Heading size="4">History ({qrHistory.length})</Heading>
-                          </Flex>
-                          <CaretDownIcon className={isHistoryOpen ? 'rotate-icon' : ''} />
-                        </Flex>
+                {qrDataUrl && (
+                  <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <Button type="button" className="min-h-11 shadow-none" onClick={() => downloadQR('png')}>
+                      <FileImage aria-hidden="true" weight="bold" />
+                      Download PNG
+                    </Button>
+                    <Button type="button" variant="outline" className="min-h-11 shadow-none" onClick={() => downloadQR('svg')}>
+                      <FileSvg aria-hidden="true" weight="bold" />
+                      Download SVG
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {qrHistory.length > 0 && (
+            <Card className="shadow-none">
+              <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex min-h-14 w-full justify-between rounded-b-none px-6 shadow-none"
+                    aria-label={`${isHistoryOpen ? 'Hide' : 'Show'} QR history`}
+                  >
+                    <span className="flex items-center gap-2 text-base font-semibold">
+                      <Clock aria-hidden="true" weight="bold" />
+                      History ({qrHistory.length})
+                    </span>
+                    <CaretDown aria-hidden="true" className={cn(isHistoryOpen && 'rotate-180')} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4 pt-0">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-muted-foreground">Previously exported QR codes</p>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setQrHistory([])}>
+                        Clear all
                       </Button>
-                    </Collapsible.Trigger>
-                    <Collapsible.Content>
-                      <Flex direction="column" gap="3" mt="4">
-                        <Flex justify="between" align="center" gap="3">
-                          <Text size="2" color="gray">Previously exported QR codes</Text>
-                          <Button variant="ghost" color="red" size="2" onClick={() => setQrHistory([])}>Clear all</Button>
-                        </Flex>
-                        <ScrollArea type="auto" scrollbars="vertical" style={{ height: 220 }}>
-                          <Flex direction="column" gap="2" pr="3">
-                            {qrHistory.map((item) => (
-                              <Card key={item.id} variant="surface">
-                                <Flex align="center" gap="3">
-                                  <Box flexGrow="1" className="history-text">
-                                    <Text size="2" weight="medium" truncate>{item.text}</Text>
-                                    <Text size="1" color="gray">
-                                      {new Date(item.createdAt).toLocaleDateString()} at{' '}
-                                      {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </Text>
-                                  </Box>
-                                  <IconButton variant="ghost" color="gray" title="Load this QR code" onClick={() => loadFromHistory(item)}>
-                                    <CopyIcon />
-                                  </IconButton>
-                                  <IconButton variant="ghost" color="red" title="Remove from history" onClick={() => setQrHistory((history) => history.filter((entry) => entry.id !== item.id))}>
-                                    <TrashIcon />
-                                  </IconButton>
-                                </Flex>
-                              </Card>
-                            ))}
-                          </Flex>
-                        </ScrollArea>
-                      </Flex>
-                    </Collapsible.Content>
-                  </Collapsible.Root>
-                </Card>
-              )}
-            </Flex>
-          </Grid>
-        </Flex>
-      </Container>
-    </Section>
+                    </div>
+                    <ScrollArea className="h-56 pr-3">
+                      <div className="space-y-2">
+                        {qrHistory.map((item) => (
+                          <div key={item.id} className="flex items-center gap-3 rounded-lg border bg-background p-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{item.text}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(item.createdAt).toLocaleDateString()} at{' '}
+                                {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => loadFromHistory(item)} aria-label="Load this QR code">
+                              <Copy aria-hidden="true" size={16} />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setQrHistory((history) => history.filter((entry) => entry.id !== item.id))}
+                              aria-label="Remove from history"
+                            >
+                              <Trash aria-hidden="true" size={16} />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          )}
+        </aside>
+      </div>
+    </main>
   )
 }

@@ -1,5 +1,8 @@
-import { Box, Button, Callout, Card, Code, Container, Flex, Heading, Text } from '@radix-ui/themes'
-import { ExclamationTriangleIcon, ReloadIcon } from '@radix-ui/react-icons'
+import { AlertTriangleIcon, RefreshCwIcon } from 'lucide-react'
+
+import { Alert, AlertDescription, AlertTitle } from './components/ui/alert'
+import { Button } from './components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
 
 interface ErrorFallbackProps {
   error: Error
@@ -10,29 +13,31 @@ export const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps)
   if (import.meta.env.DEV) throw error
 
   return (
-    <Container size="1" className="error-shell">
-      <Flex direction="column" gap="4">
-        <Callout.Root color="red" variant="soft">
-          <Callout.Icon><ExclamationTriangleIcon /></Callout.Icon>
-          <Callout.Text>
-            <Heading as="h2" size="3" mb="1">This spark has encountered a runtime error</Heading>
-            <Text size="2">Something unexpected happened while running the application.</Text>
-          </Callout.Text>
-        </Callout.Root>
+    <main className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
+      <div className="w-full max-w-md space-y-4">
+        <Alert variant="destructive">
+          <AlertTriangleIcon aria-hidden="true" />
+          <AlertTitle>This spark has encountered a runtime error</AlertTitle>
+          <AlertDescription>Something unexpected happened while running the application.</AlertDescription>
+        </Alert>
 
-        <Card>
-          <Flex direction="column" gap="2">
-            <Text size="2" color="gray" weight="medium">Error Details:</Text>
-            <Box className="error-details">
-              <Code color="red">{error.message}</Code>
-            </Box>
-          </Flex>
+        <Card className="shadow-none">
+          <CardHeader>
+            <CardTitle>Error Details</CardTitle>
+            <CardDescription>Share this message with the spark author if the issue continues.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <pre className="max-h-32 overflow-auto rounded-md border bg-muted p-3 text-xs text-destructive">
+              {error.message}
+            </pre>
+          </CardContent>
         </Card>
 
-        <Button onClick={resetErrorBoundary} variant="soft" color="gray" size="3">
-          <ReloadIcon /> Try Again
+        <Button type="button" onClick={resetErrorBoundary} className="min-h-11 w-full shadow-none" variant="outline">
+          <RefreshCwIcon aria-hidden="true" />
+          Try Again
         </Button>
-      </Flex>
-    </Container>
+      </div>
+    </main>
   )
 }
