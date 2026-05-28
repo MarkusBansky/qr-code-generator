@@ -19,7 +19,7 @@ import {
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -333,25 +333,9 @@ export default function QRGenerator() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <section aria-labelledby="page-title" className="rounded-xl border bg-card p-5 text-card-foreground shadow-none sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-2xl space-y-2">
-            <Badge variant="secondary" className="w-fit gap-2 rounded-md px-3 py-1">
-              <QrCode aria-hidden="true" size={16} weight="bold" />
-              Plain shadcn QR tool
-            </Badge>
-            <h1 id="page-title" className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              QR Generator
-            </h1>
-            <p className="text-base leading-7 text-muted-foreground">
-              A flat, high-contrast workspace with clear sections, steady spacing, and no decorative effects.
-            </p>
-          </div>
-          <div className="rounded-lg border bg-muted px-4 py-3 text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">ADHD-friendly:</span> calm colors, predictable layout, focused actions.
-          </div>
-        </div>
-      </section>
+      <h1 id="page-title" className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        QR Generator
+      </h1>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
         <div className="space-y-6">
@@ -360,7 +344,6 @@ export default function QRGenerator() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle>Create QR Code</CardTitle>
-                  <CardDescription>Enter content manually or choose one guided template.</CardDescription>
                 </div>
                 <Badge variant={isOverLimit ? 'destructive' : 'outline'} aria-live="polite" className="w-fit">
                   {characterCount}/{MAX_CHARACTERS}
@@ -471,7 +454,6 @@ export default function QRGenerator() {
           <Card className="shadow-none">
             <CardHeader>
               <CardTitle>Customize</CardTitle>
-              <CardDescription>Choose readable QR colors and a comfortable preview size.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="space-y-2">
@@ -565,7 +547,6 @@ export default function QRGenerator() {
           <Card className="shadow-none">
             <CardHeader className="text-center">
               <CardTitle>QR Code</CardTitle>
-              <CardDescription>Preview updates automatically as you type.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col items-center gap-4">
