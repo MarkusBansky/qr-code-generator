@@ -24,14 +24,14 @@ A modern, feature-rich QR Code Generator built with React, TypeScript, and Vite.
 - **History Management**: Keep track of previously generated QR codes
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Character Counter**: Live feedback on input length with 2000 character limit
-- **Clean Interface**: Minimal, distraction-free design focused on productivity
+- **Flat shadcn Interface**: Plain dark UI built from shadcn components with no decorative gradients
 
 ### 🎨 **User Experience**
 - **Instant Feedback**: Real-time QR code generation with no delays
 - **Input Validation**: Smart validation for URLs and other input types
 - **Touch-Friendly**: Optimized for mobile usage with proper touch targets
 - **Accessibility**: Built with accessibility best practices
-- **Dark/Light Mode**: Supports system theme preferences
+- **ADHD-Friendly Layout**: Calm contrast, predictable sections, larger touch targets, and reduced visual noise
 
 ## 🚀 Getting Started
 
@@ -78,7 +78,7 @@ The built files will be available in the `dist` directory.
 - **Frontend Framework**: [React 19](https://react.dev/) with [TypeScript](https://www.typescriptlang.org/)
 - **Build Tool**: [Vite](https://vitejs.dev/) for fast development and optimized builds
 - **Styling**: [TailwindCSS](https://tailwindcss.com/) for utility-first CSS
-- **UI Components**: [Radix UI](https://www.radix-ui.com/) for accessible, unstyled components
+- **UI Components**: shadcn-style components built on [Radix UI](https://www.radix-ui.com/) primitives
 - **QR Generation**: [qrcode](https://github.com/soldair/node-qrcode) library
 - **Icons**: [Phosphor Icons](https://phosphoricons.com/) for consistent iconography
 - **Form Handling**: [React Hook Form](https://react-hook-form.com/) with [Zod](https://zod.dev/) validation
