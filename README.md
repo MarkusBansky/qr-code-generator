@@ -81,7 +81,6 @@ The built files will be available in the `dist` directory.
 - **UI Components**: shadcn-style components built on [Radix UI](https://www.radix-ui.com/) primitives
 - **QR Generation**: [qrcode](https://github.com/soldair/node-qrcode) library
 - **Icons**: [Phosphor Icons](https://phosphoricons.com/) for consistent iconography
-- **Form Handling**: [React Hook Form](https://react-hook-form.com/) with [Zod](https://zod.dev/) validation
 
 ## 📁 Project Structure
 
@@ -90,9 +89,7 @@ src/
 ├── components/           # React components
 │   ├── QRGenerator.tsx  # Main QR generator component
 │   └── ui/              # Reusable UI components
-├── hooks/               # Custom React hooks
 ├── lib/                 # Utility functions and configurations
-├── styles/              # Global styles and Tailwind configuration
 ├── App.tsx              # Main application component
 └── main.tsx            # Application entry point
 ```
