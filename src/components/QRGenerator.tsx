@@ -1,27 +1,47 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import QRCode from 'qrcode'
+import {
+  AddressBook,
+  CaretDown,
+  ChatCircle,
+  Clock,
+  Copy,
+  Download,
+  Envelope,
+  FileImage,
+  FileSvg,
+  MapPin,
+  Phone,
+  QrCode,
+  Trash,
+  WifiHigh,
+} from '@phosphor-icons/react'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Download, QrCode, FileImage, FileSvg, Clock, CaretDown, Copy, Trash, WifiHigh, AddressBook, Envelope, Phone, ChatCircle, MapPin } from '@phosphor-icons/react'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 
 const MAX_CHARACTERS = 2000
 
+type TemplateFieldType = 'text' | 'email' | 'tel' | 'password'
+
 interface QRTemplate {
   name: string
-  icon: React.ReactNode
+  icon: ReactNode
   description: string
   fields: {
     label: string
     key: string
-    type: 'text' | 'email' | 'tel' | 'password'
+    type: TemplateFieldType
     placeholder: string
     required?: boolean
   }[]
@@ -31,52 +51,49 @@ interface QRTemplate {
 const QR_TEMPLATES: QRTemplate[] = [
   {
     name: 'WiFi Network',
-    icon: <WifiHigh size={16} />,
+    icon: <WifiHigh aria-hidden="true" weight="bold" />,
     description: 'Connect to WiFi network automatically',
     fields: [
       { label: 'Network Name (SSID)', key: 'ssid', type: 'text', placeholder: 'MyWiFiNetwork', required: true },
       { label: 'Password', key: 'password', type: 'password', placeholder: 'WiFi password' },
-      { label: 'Security Type', key: 'security', type: 'text', placeholder: 'WPA (leave empty for open)' }
+      { label: 'Security Type', key: 'security', type: 'text', placeholder: 'WPA (leave empty for open)' },
     ],
     generateText: (values) => {
       const security = values.security || 'WPA'
       const password = values.password || ''
       return `WIFI:T:${security};S:${values.ssid};P:${password};H:false;;`
-    }
+    },
   },
   {
     name: 'Contact Card',
-    icon: <AddressBook size={16} />,
+    icon: <AddressBook aria-hidden="true" weight="bold" />,
     description: 'Save contact information directly to phone',
     fields: [
       { label: 'Full Name', key: 'name', type: 'text', placeholder: 'John Doe', required: true },
       { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890' },
       { label: 'Email', key: 'email', type: 'email', placeholder: 'john@example.com' },
       { label: 'Organization', key: 'org', type: 'text', placeholder: 'Company Name' },
-      { label: 'Website', key: 'url', type: 'text', placeholder: 'https://example.com' }
+      { label: 'Website', key: 'url', type: 'text', placeholder: 'https://example.com' },
     ],
-    generateText: (values) => {
-      const vcard = [
-        'BEGIN:VCARD',
-        'VERSION:3.0',
-        `FN:${values.name}`,
-        values.phone ? `TEL:${values.phone}` : '',
-        values.email ? `EMAIL:${values.email}` : '',
-        values.org ? `ORG:${values.org}` : '',
-        values.url ? `URL:${values.url}` : '',
-        'END:VCARD'
-      ].filter(line => line).join('\n')
-      return vcard
-    }
+    generateText: (values) => [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `FN:${values.name}`,
+      values.phone ? `TEL:${values.phone}` : '',
+      values.email ? `EMAIL:${values.email}` : '',
+      values.org ? `ORG:${values.org}` : '',
+      values.url ? `URL:${values.url}` : '',
+      'END:VCARD',
+    ].filter(Boolean).join('\n'),
   },
   {
     name: 'Email',
-    icon: <Envelope size={16} />,
+    icon: <Envelope aria-hidden="true" weight="bold" />,
     description: 'Pre-compose an email message',
     fields: [
       { label: 'Email Address', key: 'email', type: 'email', placeholder: 'recipient@example.com', required: true },
       { label: 'Subject', key: 'subject', type: 'text', placeholder: 'Email subject' },
-      { label: 'Message', key: 'body', type: 'text', placeholder: 'Email message' }
+      { label: 'Message', key: 'body', type: 'text', placeholder: 'Email message' },
     ],
     generateText: (values) => {
       let mailto = `mailto:${values.email}`
@@ -85,46 +102,46 @@ const QR_TEMPLATES: QRTemplate[] = [
       if (values.body) params.push(`body=${encodeURIComponent(values.body)}`)
       if (params.length > 0) mailto += `?${params.join('&')}`
       return mailto
-    }
+    },
   },
   {
     name: 'Phone Call',
-    icon: <Phone size={16} />,
+    icon: <Phone aria-hidden="true" weight="bold" />,
     description: 'Dial a phone number directly',
     fields: [
-      { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890', required: true }
+      { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890', required: true },
     ],
-    generateText: (values) => `tel:${values.phone}`
+    generateText: (values) => `tel:${values.phone}`,
   },
   {
     name: 'SMS Message',
-    icon: <ChatCircle size={16} />,
+    icon: <ChatCircle aria-hidden="true" weight="bold" />,
     description: 'Send a pre-written text message',
     fields: [
       { label: 'Phone Number', key: 'phone', type: 'tel', placeholder: '+1234567890', required: true },
-      { label: 'Message', key: 'message', type: 'text', placeholder: 'Your message here' }
+      { label: 'Message', key: 'message', type: 'text', placeholder: 'Your message here' },
     ],
     generateText: (values) => {
       let sms = `sms:${values.phone}`
       if (values.message) sms += `?body=${encodeURIComponent(values.message)}`
       return sms
-    }
+    },
   },
   {
     name: 'Location',
-    icon: <MapPin size={16} />,
+    icon: <MapPin aria-hidden="true" weight="bold" />,
     description: 'Share GPS coordinates or address',
     fields: [
       { label: 'Latitude', key: 'lat', type: 'text', placeholder: '40.7128', required: true },
       { label: 'Longitude', key: 'lng', type: 'text', placeholder: '-74.0060', required: true },
-      { label: 'Label (optional)', key: 'label', type: 'text', placeholder: 'My Location' }
+      { label: 'Label (optional)', key: 'label', type: 'text', placeholder: 'My Location' },
     ],
     generateText: (values) => {
       const geo = `geo:${values.lat},${values.lng}`
       if (values.label) return `${geo}?q=${values.lat},${values.lng}(${encodeURIComponent(values.label)})`
       return geo
-    }
-  }
+    },
+  },
 ]
 
 interface QROptions {
@@ -141,62 +158,67 @@ interface QRHistoryItem {
   options: QROptions
 }
 
+const COLOR_PRESETS = [
+  { name: 'Classic', dark: '#111827', light: '#ffffff' },
+  { name: 'Slate', dark: '#f8fafc', light: '#0f172a' },
+  { name: 'Blue', dark: '#1d4ed8', light: '#eff6ff' },
+  { name: 'Green', dark: '#166534', light: '#f0fdf4' },
+]
+
+const helperTextId = 'qr-text-helper'
+
 export default function QRGenerator() {
-  const [text, setText] = useState<string>('')
-  const [qrDataUrl, setQrDataUrl] = useState<string>('')
-  const [qrSvg, setQrSvg] = useState<string>('')
+  const [text, setText] = useState('')
+  const [qrDataUrl, setQrDataUrl] = useState('')
+  const [qrSvg, setQrSvg] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<QRTemplate | null>(null)
   const [templateValues, setTemplateValues] = useState<Record<string, string>>({})
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  
-  // Use persistent storage for QR history
   const [qrHistory, setQrHistory] = useState<QRHistoryItem[]>([])
-  
   const [options, setOptions] = useState<QROptions>({
-    colorDark: '#262626',
-    colorLight: '#FFFFFF',
+    colorDark: '#111827',
+    colorLight: '#ffffff',
     size: 256,
-    margin: 2
+    margin: 2,
   })
 
-  const isUrl = (str: string): boolean => {
+  const characterCount = text.length
+  const isOverLimit = characterCount > MAX_CHARACTERS
+  const displayText = isOverLimit ? text.slice(0, MAX_CHARACTERS) : text
+
+  const isUrl = (value: string): boolean => {
     try {
-      new URL(str)
+      new URL(value)
       return true
     } catch {
-      return str.startsWith('http://') || str.startsWith('https://') || str.includes('.')
+      return value.startsWith('http://') || value.startsWith('https://') || value.includes('.')
     }
   }
 
   const saveToHistory = (inputText: string, qrOptions: QROptions) => {
     if (!inputText.trim()) return
-    
+
     setQrHistory((currentHistory) => {
-      // Check if this exact text and options combination already exists
       const existingIndex = currentHistory.findIndex(
-        item => item.text === inputText && 
-                JSON.stringify(item.options) === JSON.stringify(qrOptions)
+        (item) => item.text === inputText && JSON.stringify(item.options) === JSON.stringify(qrOptions),
       )
-      
+
       if (existingIndex !== -1) {
-        // Move existing item to front
         const existing = currentHistory[existingIndex]
         return [
           { ...existing, createdAt: Date.now() },
-          ...currentHistory.filter((_, index) => index !== existingIndex)
+          ...currentHistory.filter((_, index) => index !== existingIndex),
         ]
       }
-      
-      // Add new item to front, limit to 20 items
+
       const newItem: QRHistoryItem = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
         text: inputText,
         createdAt: Date.now(),
-        options: { ...qrOptions }
+        options: { ...qrOptions },
       }
-      
+
       return [newItem, ...currentHistory].slice(0, 20)
     })
   }
@@ -204,16 +226,6 @@ export default function QRGenerator() {
   const loadFromHistory = (item: QRHistoryItem) => {
     setText(item.text)
     setOptions(item.options)
-  }
-
-  const removeFromHistory = (itemId: string) => {
-    setQrHistory((currentHistory) => 
-      currentHistory.filter(item => item.id !== itemId)
-    )
-  }
-
-  const clearHistory = () => {
-    setQrHistory([])
   }
 
   const selectTemplate = (template: QRTemplate) => {
@@ -230,20 +242,14 @@ export default function QRGenerator() {
   const updateTemplateValue = (key: string, value: string) => {
     const newValues = { ...templateValues, [key]: value }
     setTemplateValues(newValues)
-    
-    if (selectedTemplate) {
-      // Check if all required fields are filled
-      const allRequiredFilled = selectedTemplate.fields
-        .filter(field => field.required)
-        .every(field => newValues[field.key]?.trim())
-      
-      if (allRequiredFilled) {
-        const generatedText = selectedTemplate.generateText(newValues)
-        setText(generatedText)
-      } else {
-        setText('')
-      }
-    }
+
+    if (!selectedTemplate) return
+
+    const allRequiredFilled = selectedTemplate.fields
+      .filter((field) => field.required)
+      .every((field) => newValues[field.key]?.trim())
+
+    setText(allRequiredFilled ? selectedTemplate.generateText(newValues) : '')
   }
 
   const generateQR = async (input: string) => {
@@ -255,36 +261,23 @@ export default function QRGenerator() {
 
     setIsGenerating(true)
     try {
-      // Generate SVG version
-      const svgString = await QRCode.toString(input, {
-        type: 'svg',
+      const qrOptions = {
         width: options.size,
         margin: options.margin,
         color: {
           dark: options.colorDark,
-          light: options.colorLight
+          light: options.colorLight,
         },
-        errorCorrectionLevel: 'M'
-      })
-      
+        errorCorrectionLevel: 'M' as const,
+      }
+
+      const [svgString, dataUrl] = await Promise.all([
+        QRCode.toString(input, { ...qrOptions, type: 'svg' }),
+        QRCode.toDataURL(input, { ...qrOptions, rendererOpts: { quality: 0.92 } }),
+      ])
+
       setQrSvg(svgString)
-
-      // Generate PNG version
-      const dataUrl = await QRCode.toDataURL(input, {
-        width: options.size,
-        margin: options.margin,
-        color: {
-          dark: options.colorDark,
-          light: options.colorLight
-        },
-        errorCorrectionLevel: 'M',
-        rendererOpts: {
-          quality: 0.92
-        }
-      })
       setQrDataUrl(dataUrl)
-      
-
     } catch (error) {
       console.error('Error generating QR code:', error)
       setQrDataUrl('')
@@ -296,14 +289,14 @@ export default function QRGenerator() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      generateQR(text)
+      generateQR(displayText)
     }, 100)
 
     return () => clearTimeout(timer)
-  }, [text, options])
+  }, [displayText, options])
 
   const downloadQR = async (format: 'png' | 'svg' = 'png') => {
-    if (!text.trim()) return
+    if (!displayText.trim()) return
 
     try {
       if (format === 'svg') {
@@ -315,16 +308,15 @@ export default function QRGenerator() {
         link.click()
         URL.revokeObjectURL(url)
       } else {
-        // Use the standard method for PNG download
         const canvas = document.createElement('canvas')
-        await QRCode.toCanvas(canvas, text, {
+        await QRCode.toCanvas(canvas, displayText, {
           width: 512,
           margin: 3,
           color: {
             dark: options.colorDark,
-            light: options.colorLight
+            light: options.colorLight,
           },
-          errorCorrectionLevel: 'H'
+          errorCorrectionLevel: 'H',
         })
 
         const link = document.createElement('a')
@@ -332,404 +324,320 @@ export default function QRGenerator() {
         link.href = canvas.toDataURL()
         link.click()
       }
-      
-      // Save to history only when user actually exports the QR code
-      saveToHistory(text, options)
+
+      saveToHistory(displayText, options)
     } catch (error) {
       console.error('Error downloading QR code:', error)
     }
   }
 
-  const characterCount = text.length
-  const isOverLimit = characterCount > MAX_CHARACTERS
-  const displayText = isOverLimit ? text.slice(0, MAX_CHARACTERS) : text
-
   return (
-    <div className="flex-1 bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-lg space-y-6">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <QrCode size={28} className="text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">QR Generator</h1>
-          </div>
-          <p className="text-sm text-muted-foreground">Convert any text or URL into a QR code and download as PNG or SVG.</p>
-          <p className="text-sm text-muted-foreground">No trackers. No ads. Forever free, as it should be.</p>
-        </div>
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <h1 id="page-title" className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+        QR Generator
+      </h1>
 
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Create QR Code</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="manual" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="manual" onClick={clearTemplate}>Manual Input</TabsTrigger>
-                <TabsTrigger value="templates">Templates</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="manual" className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="text-input" className="text-sm font-medium">
-                      Text or URL
-                    </Label>
-                    <Badge 
-                      variant={isOverLimit ? "destructive" : "secondary"}
-                      className="text-xs"
-                    >
-                      {characterCount}/{MAX_CHARACTERS}
-                    </Badge>
-                  </div>
-                  <Input
-                    id="text-input"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder="Enter text or paste a URL..."
-                    className={`font-mono text-sm ${isUrl(text) ? 'text-primary' : ''} ${isOverLimit ? 'border-destructive' : ''}`}
-                  />
-                  {text && isUrl(text) && (
-                    <p className="text-xs text-primary">✓ Detected URL format</p>
-                  )}
-                  {isOverLimit && (
-                    <p className="text-xs text-destructive">Text will be truncated to {MAX_CHARACTERS} characters</p>
-                  )}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
+        <div className="space-y-6">
+          <Card className="shadow-none">
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle>Create QR Code</CardTitle>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="templates" className="mt-4 space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  {QR_TEMPLATES.map((template) => (
-                    <Button
-                      key={template.name}
-                      variant={selectedTemplate?.name === template.name ? "default" : "outline"}
-                      size="sm"
-                      className="h-auto p-3 flex flex-col items-center gap-2"
-                      onClick={() => selectTemplate(template)}
-                    >
-                      {template.icon}
-                      <span className="text-xs font-medium">{template.name}</span>
-                    </Button>
-                  ))}
-                </div>
-                
-                {selectedTemplate && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium flex items-center gap-2">
-                          {selectedTemplate.icon}
-                          {selectedTemplate.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {selectedTemplate.description}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearTemplate}
-                        className="text-xs h-7 px-2"
-                      >
-                        Clear
-                      </Button>
+                <Badge variant={isOverLimit ? 'destructive' : 'outline'} aria-live="polite" className="w-fit">
+                  {characterCount}/{MAX_CHARACTERS}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="manual" className="gap-4">
+                <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg shadow-none">
+                  <TabsTrigger value="manual" onClick={clearTemplate} className="min-h-11 shadow-none data-[state=active]:shadow-none">
+                    Manual Input
+                  </TabsTrigger>
+                  <TabsTrigger value="templates" className="min-h-11 shadow-none data-[state=active]:shadow-none">
+                    Templates
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="manual" className="mt-4">
+                  <div className="space-y-3">
+                    <Label htmlFor="text-input">Text or URL</Label>
+                    <Textarea
+                      id="text-input"
+                      value={text}
+                      onChange={(event) => setText(event.target.value)}
+                      placeholder="Enter text or paste a URL..."
+                      aria-describedby={helperTextId}
+                      aria-invalid={isOverLimit}
+                      className="min-h-32 resize-y text-base leading-7 shadow-none md:text-base"
+                    />
+                    <div id={helperTextId} className="space-y-2 text-sm" aria-live="polite">
+                      <p className="text-muted-foreground">Preview updates after you pause typing. Long text is limited for reliable QR scanning.</p>
+                      {text && isUrl(text) && <p className="font-medium text-primary">Detected URL format.</p>}
+                      {isOverLimit && <p className="font-medium text-destructive">Text will be truncated to {MAX_CHARACTERS} characters.</p>}
                     </div>
-                    
-                    <div className="space-y-3">
-                      {selectedTemplate.fields.map((field) => (
-                        <div key={field.key} className="space-y-1">
-                          <Label className="text-xs font-medium">
-                            {field.label}
-                            {field.required && <span className="text-destructive ml-1">*</span>}
-                          </Label>
-                          <Input
-                            type={field.type}
-                            value={templateValues[field.key] || ''}
-                            onChange={(e) => updateTemplateValue(field.key, e.target.value)}
-                            placeholder={field.placeholder}
-                            className="text-sm"
-                          />
-                        </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="templates" className="mt-4">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {QR_TEMPLATES.map((template) => (
+                        <Button
+                          key={template.name}
+                          type="button"
+                          variant={selectedTemplate?.name === template.name ? 'default' : 'outline'}
+                          className="min-h-14 justify-start rounded-lg px-4 shadow-none"
+                          onClick={() => selectTemplate(template)}
+                          aria-pressed={selectedTemplate?.name === template.name}
+                        >
+                          {template.icon}
+                          <span>{template.name}</span>
+                        </Button>
                       ))}
                     </div>
-                    
-                    {text && (
-                      <div className="space-y-2 pt-3 border-t">
-                        <Label className="text-xs font-medium">Generated Content</Label>
-                        <div className="p-2 bg-muted rounded text-xs font-mono break-all">
-                          {text}
+
+                    {selectedTemplate && (
+                      <div className="rounded-xl border bg-background p-4">
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="space-y-1">
+                            <h2 className="flex items-center gap-2 text-lg font-semibold">
+                              {selectedTemplate.icon}
+                              {selectedTemplate.name}
+                            </h2>
+                            <p className="text-sm text-muted-foreground">{selectedTemplate.description}</p>
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" onClick={clearTemplate}>
+                            Clear
+                          </Button>
                         </div>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          {selectedTemplate.fields.map((field) => {
+                            const fieldId = `template-${selectedTemplate.name}-${field.key}`.replace(/\s+/g, '-').toLowerCase()
+                            return (
+                              <div key={field.key} className="space-y-2">
+                                <Label htmlFor={fieldId}>
+                                  {field.label}
+                                  {field.required && <span className="ml-1 text-destructive" aria-label="required">*</span>}
+                                </Label>
+                                <Input
+                                  id={fieldId}
+                                  type={field.type}
+                                  value={templateValues[field.key] || ''}
+                                  onChange={(event) => updateTemplateValue(field.key, event.target.value)}
+                                  placeholder={field.placeholder}
+                                  required={field.required}
+                                  className="min-h-11 text-base shadow-none md:text-base"
+                                />
+                              </div>
+                            )
+                          })}
+                        </div>
+
+                        {text && (
+                          <div className="mt-4 rounded-lg border bg-muted p-3" aria-live="polite">
+                            <Label className="mb-2 block text-xs uppercase tracking-wide text-muted-foreground">Generated Content</Label>
+                            <p className="break-all font-mono text-sm leading-6 text-foreground">{text}</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Customize</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Size</Label>
-              <Select 
-                value={options.size.toString()} 
-                onValueChange={(value) => 
-                  setOptions(prev => ({ ...prev, size: parseInt(value) }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="200">Small (200px)</SelectItem>
-                  <SelectItem value="256">Medium (256px)</SelectItem>
-                  <SelectItem value="320">Large (320px)</SelectItem>
-                  <SelectItem value="400">Extra Large (400px)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Color Presets</Label>
-              <div className="grid grid-cols-4 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 p-1"
-                  onClick={() => setOptions(prev => ({ ...prev, colorDark: '#000000', colorLight: '#FFFFFF' }))}
-                >
-                  <div className="flex gap-1">
-                    <div className="w-3 h-3 bg-black rounded-sm"></div>
-                    <div className="w-3 h-3 bg-white border rounded-sm"></div>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 p-1"
-                  onClick={() => setOptions(prev => ({ ...prev, colorDark: '#1e40af', colorLight: '#eff6ff' }))}
-                >
-                  <div className="flex gap-1">
-                    <div className="w-3 h-3 bg-blue-800 rounded-sm"></div>
-                    <div className="w-3 h-3 bg-blue-50 border rounded-sm"></div>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 p-1"
-                  onClick={() => setOptions(prev => ({ ...prev, colorDark: '#166534', colorLight: '#f0fdf4' }))}
-                >
-                  <div className="flex gap-1">
-                    <div className="w-3 h-3 bg-green-800 rounded-sm"></div>
-                    <div className="w-3 h-3 bg-green-50 border rounded-sm"></div>
-                  </div>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 p-1"
-                  onClick={() => setOptions(prev => ({ ...prev, colorDark: '#dc2626', colorLight: '#fef2f2' }))}
-                >
-                  <div className="flex gap-1">
-                    <div className="w-3 h-3 bg-red-600 rounded-sm"></div>
-                    <div className="w-3 h-3 bg-red-50 border rounded-sm"></div>
-                  </div>
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid grid-cols-2 gap-4">
+          <Card className="shadow-none">
+            <CardHeader>
+              <CardTitle>Customize</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="color-dark" className="text-sm font-medium">Foreground Color</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="color-dark"
-                    type="color"
-                    value={options.colorDark}
-                    onChange={(e) => setOptions(prev => ({ ...prev, colorDark: e.target.value }))}
-                    className="w-12 h-8 p-1 border-2 rounded cursor-pointer"
-                  />
-                  <Input
-                    value={options.colorDark}
-                    onChange={(e) => setOptions(prev => ({ ...prev, colorDark: e.target.value }))}
-                    className="font-mono text-xs"
-                    placeholder="#262626"
-                  />
-                </div>
+                <Label htmlFor="size-select">Size</Label>
+                <Select
+                  value={options.size.toString()}
+                  onValueChange={(value) => setOptions((prev) => ({ ...prev, size: Number.parseInt(value, 10) }))}
+                >
+                  <SelectTrigger id="size-select" className="min-h-11 w-full shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="shadow-none">
+                    <SelectItem value="200">Small (200px)</SelectItem>
+                    <SelectItem value="256">Medium (256px)</SelectItem>
+                    <SelectItem value="320">Large (320px)</SelectItem>
+                    <SelectItem value="400">Extra Large (400px)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="color-light" className="text-sm font-medium">Background Color</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="color-light"
-                    type="color"
-                    value={options.colorLight}
-                    onChange={(e) => setOptions(prev => ({ ...prev, colorLight: e.target.value }))}
-                    className="w-12 h-8 p-1 border-2 rounded cursor-pointer"
-                  />
-                  <Input
-                    value={options.colorLight}
-                    onChange={(e) => setOptions(prev => ({ ...prev, colorLight: e.target.value }))}
-                    className="font-mono text-xs"
-                    placeholder="#FFFFFF"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">QR Code</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                {isGenerating ? (
-                  <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
-                    <div className="animate-pulse text-muted-foreground">Generating...</div>
-                  </div>
-                ) : qrSvg ? (
-                  <div 
-                    className="w-64 h-64 rounded-lg shadow-sm border flex items-center justify-center p-2"
-                    style={{ backgroundColor: options.colorLight }}
-                  >
-                    <div 
-                      className="w-full h-full [&_svg]:w-full [&_svg]:h-full"
-                      dangerouslySetInnerHTML={{ __html: qrSvg }}
-                    />
-                  </div>
-                ) : (
-                  <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
-                    <div className="text-center text-muted-foreground">
-                      <QrCode size={48} className="mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Enter text to generate QR code</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {qrSvg && (
-                <div className="flex gap-2 w-full">
-                  <Button 
-                    onClick={() => downloadQR('png')}
-                    className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
-                  >
-                    <FileImage size={16} className="mr-2" />
-                    PNG
-                  </Button>
-                  <Button 
-                    onClick={() => downloadQR('svg')}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <FileSvg size={16} className="mr-2" />
-                    SVG
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              <Separator />
 
-        {qrHistory.length > 0 && (
-          <Card>
-            <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="pb-4 cursor-pointer hover:bg-muted/50 rounded-t-lg transition-colors">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Clock size={20} className="text-muted-foreground" />
-                      History ({qrHistory.length})
-                    </CardTitle>
-                    <CaretDown 
-                      size={16} 
-                      className={`text-muted-foreground transition-transform duration-200 ${
-                        isHistoryOpen ? 'rotate-180' : ''
-                      }`} 
-                    />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="text-sm text-muted-foreground">
-                      Previously exported QR codes
-                    </p>
+              <div className="space-y-3">
+                <Label asChild>
+                  <span>Color Presets</span>
+                </Label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {COLOR_PRESETS.map((preset) => (
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearHistory}
-                      className="text-xs h-7 px-2 text-muted-foreground hover:text-destructive"
+                      key={preset.name}
+                      type="button"
+                      variant="outline"
+                      className="min-h-11 justify-start rounded-lg shadow-none"
+                      onClick={() => setOptions((prev) => ({ ...prev, colorDark: preset.dark, colorLight: preset.light }))}
                     >
-                      Clear all
+                      <span className="flex items-center gap-2">
+                        <span className="size-3 rounded-sm border" style={{ backgroundColor: preset.dark }} aria-hidden="true" />
+                        <span className="size-3 rounded-sm border" style={{ backgroundColor: preset.light }} aria-hidden="true" />
+                        {preset.name}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="color-dark">Foreground Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="color-dark"
+                      type="color"
+                      value={options.colorDark}
+                      onChange={(event) => setOptions((prev) => ({ ...prev, colorDark: event.target.value }))}
+                      className="h-11 w-14 shrink-0 cursor-pointer p-1 shadow-none"
+                      aria-label="Foreground color picker"
+                    />
+                    <Input
+                      value={options.colorDark}
+                      onChange={(event) => setOptions((prev) => ({ ...prev, colorDark: event.target.value }))}
+                      className="min-h-11 font-mono text-base shadow-none md:text-sm"
+                      aria-label="Foreground color hex value"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="color-light">Background Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="color-light"
+                      type="color"
+                      value={options.colorLight}
+                      onChange={(event) => setOptions((prev) => ({ ...prev, colorLight: event.target.value }))}
+                      className="h-11 w-14 shrink-0 cursor-pointer p-1 shadow-none"
+                      aria-label="Background color picker"
+                    />
+                    <Input
+                      value={options.colorLight}
+                      onChange={(event) => setOptions((prev) => ({ ...prev, colorLight: event.target.value }))}
+                      className="min-h-11 font-mono text-base shadow-none md:text-sm"
+                      aria-label="Background color hex value"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <aside className="space-y-6 lg:sticky lg:top-6" aria-label="QR preview and history">
+          <Card className="shadow-none">
+            <CardHeader className="text-center">
+              <CardTitle>QR Code</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex min-h-72 w-full items-center justify-center rounded-xl border bg-muted p-4" role="status" aria-live="polite">
+                  {isGenerating ? (
+                    <p className="text-sm text-muted-foreground">Generating QR code…</p>
+                  ) : qrDataUrl ? (
+                    <img src={qrDataUrl} width={options.size} height={options.size} alt="Generated QR code" className="h-auto max-w-full rounded-md border bg-white" />
+                  ) : (
+                    <div className="space-y-3 text-center text-muted-foreground">
+                      <QrCode aria-hidden="true" size={52} className="mx-auto" />
+                      <p className="text-sm">Enter text to generate QR code.</p>
+                    </div>
+                  )}
+                </div>
+
+                {qrDataUrl && (
+                  <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <Button type="button" className="min-h-11 shadow-none" onClick={() => downloadQR('png')}>
+                      <FileImage aria-hidden="true" weight="bold" />
+                      Download PNG
+                    </Button>
+                    <Button type="button" variant="outline" className="min-h-11 shadow-none" onClick={() => downloadQR('svg')}>
+                      <FileSvg aria-hidden="true" weight="bold" />
+                      Download SVG
                     </Button>
                   </div>
-                  <ScrollArea className="h-48">
-                    <div className="space-y-2">
-                      {qrHistory.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-3 p-2 rounded-md border bg-card hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {item.text.length > 40 
-                                ? `${item.text.substring(0, 40)}...` 
-                                : item.text
-                              }
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(item.createdAt).toLocaleDateString()} at{' '}
-                              {new Date(item.createdAt).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </p>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => loadFromHistory(item)}
-                              title="Load this QR code"
-                            >
-                              <Copy size={12} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 hover:text-destructive"
-                              onClick={() => removeFromHistory(item.id)}
-                              title="Remove from history"
-                            >
-                              <Trash size={12} />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </CollapsibleContent>
-            </Collapsible>
+                )}
+              </div>
+            </CardContent>
           </Card>
-        )}
 
-        <canvas ref={canvasRef} className="hidden" />
+          {qrHistory.length > 0 && (
+            <Card className="shadow-none">
+              <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex min-h-14 w-full justify-between rounded-b-none px-6 shadow-none"
+                    aria-label={`${isHistoryOpen ? 'Hide' : 'Show'} QR history`}
+                  >
+                    <span className="flex items-center gap-2 text-base font-semibold">
+                      <Clock aria-hidden="true" weight="bold" />
+                      History ({qrHistory.length})
+                    </span>
+                    <CaretDown aria-hidden="true" className={cn(isHistoryOpen && 'rotate-180')} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="space-y-4 pt-0">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-sm text-muted-foreground">Previously exported QR codes</p>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setQrHistory([])}>
+                        Clear all
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-56 pr-3">
+                      <div className="space-y-2">
+                        {qrHistory.map((item) => (
+                          <div key={item.id} className="flex items-center gap-3 rounded-lg border bg-background p-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{item.text}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(item.createdAt).toLocaleDateString()} at{' '}
+                                {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => loadFromHistory(item)} aria-label="Load this QR code">
+                              <Copy aria-hidden="true" size={16} />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setQrHistory((history) => history.filter((entry) => entry.id !== item.id))}
+                              aria-label="Remove from history"
+                            >
+                              <Trash aria-hidden="true" size={16} />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
+          )}
+        </aside>
       </div>
-    </div>
+    </main>
   )
 }

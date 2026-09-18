@@ -21,10 +21,10 @@
     /* Linting */
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
+    "strict": false,
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ]
     },
   },
